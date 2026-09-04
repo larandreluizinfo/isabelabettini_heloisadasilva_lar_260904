@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lilo & Stitch - Praia</title>
+    <title>Lilo & Stitch - Colete as Lilos</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            background: #87CEEB;
-        }
+        body { font-family: 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
 
         #startScreen {
             position: fixed; inset: 0;
@@ -20,21 +14,10 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 100;
         }
-
-        #startScreen h1 {
-            font-size: 3.5rem; color: white;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
-            margin-bottom: 5px;
-        }
-
-        #startScreen h2 {
-            font-size: 1.3rem; color: #fff3e0; margin-bottom: 30px;
-            font-style: italic;
-        }
-
+        #startScreen h1 { font-size: 3.5rem; color: white; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); margin-bottom: 5px; }
+        #startScreen h2 { font-size: 1.3rem; color: #fff3e0; margin-bottom: 30px; font-style: italic; }
         .stitch-art { font-size: 120px; margin-bottom: 15px; animation: bounce 2s ease-in-out infinite; }
         @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
-
         #startBtn {
             padding: 15px 50px; font-size: 1.3rem; border: none; border-radius: 50px;
             background: linear-gradient(135deg, #ff6f00, #ff8f00); color: white;
@@ -50,7 +33,6 @@
             display: flex; justify-content: space-between; align-items: center;
             padding: 15px 30px; z-index: 10; pointer-events: none;
         }
-
         .hud-item {
             color: white; font-size: 1.2rem; font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
@@ -59,8 +41,7 @@
         .hud-item span { color: #ffd54f; }
 
         #gameOverScreen {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.8); display: none;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 50;
         }
         #gameOverScreen h1 { font-size: 3rem; color: #ff8a65; margin-bottom: 10px; }
@@ -72,28 +53,41 @@
             text-transform: uppercase; letter-spacing: 2px;
         }
         #restartBtn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
+
+        #winScreen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 55;
+        }
+        #winScreen h1 { font-size: 3rem; color: #76ff03; margin-bottom: 10px; }
+        #winScreen p { color: white; font-size: 1.5rem; margin-bottom: 30px; }
     </style>
 </head>
 <body>
     <div id="startScreen">
         <div class="stitch-art">🌺</div>
         <h1>Lilo & Stitch</h1>
-        <h2>Aventura na Praia</h2>
+        <h2>Colete todas as Lilos na praia!</h2>
         <button id="startBtn">Jogar</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <div id="hud">
-        <div class="hud-item">🌺 Pontos: <span id="score">0</span></div>
+        <div class="hud-item">👧 Lilos: <span id="score">0</span> / <span id="total">10</span></div>
         <div class="hud-item">❤️ Vidas: <span id="lives">3</span></div>
         <div class="hud-item">🌊 Nível: <span id="level">1</span></div>
     </div>
 
     <div id="gameOverScreen">
         <h1>Fim de Jogo!</h1>
-        <p>Pontuação final: <span id="finalScore">0</span></p>
+        <p>Lilos coletadas: <span id="finalScore">0</span> / <span id="finalTotal">10</span></p>
         <button id="restartBtn">Jogar Novamente</button>
+    </div>
+
+    <div id="winScreen">
+        <h1>Ohana!</h1>
+        <p>Todas as Lilos foram coletadas! 🌺</p>
+        <button id="restartBtn2" style="padding:15px 50px;font-size:1.3rem;border:none;border-radius:50px;background:linear-gradient(135deg,#76ff03,#00c853);color:#1a1a2e;font-weight:bold;cursor:pointer;text-transform:uppercase;letter-spacing:2px;">Jogar Novamente</button>
     </div>
 
     <script>
@@ -104,21 +98,17 @@
         resize();
         window.addEventListener('resize', resize);
 
-        let gameRunning = false, score = 0, lives = 3, level = 1;
-        let spawnTimer = 0, shellTimer = 0, frame = 0;
-        let particles = [], enemies = [], shells = [], waves = [];
-        let invincible = false, invincibleTimer = 0;
+        let gameRunning = false, collected = 0, totalLilos = 10, lives = 3, level = 1;
+        let frame = 0, spawnTimer = 0, invincible = false, invincibleTimer = 0;
+        let particles = [], enemies = [], lilos = [], obstacles = [], waves = [], coconuts = [];
 
-        for (let i = 0; i < 5; i++) {
-            waves.push({ x: i * W * 0.25, y: H * 0.58, speed: 0.6 + Math.random() * 0.4, phase: Math.random() * Math.PI * 2 });
-        }
+        for (let i = 0; i < 5; i++) waves.push({ phase: Math.random()*Math.PI*2 });
 
         const stitch = { x: 0, y: 0, w: 48, h: 48, vx: 0, vy: 0, speed: 5.5, emoji: '👽' };
 
         const keys = {};
         document.addEventListener('keydown', e => keys[e.key] = true);
         document.addEventListener('keyup', e => keys[e.key] = false);
-
         let mouseX = 0, mouseY = 0, mouseDown = false;
         canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
         canvas.addEventListener('mousedown', () => mouseDown = true);
@@ -127,21 +117,29 @@
         canvas.addEventListener('touchmove', e => { e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; });
         canvas.addEventListener('touchend', () => mouseDown = false);
 
+        function spawnLilo() {
+            const x = Math.random() * (W - 80) + 40;
+            const y = Math.random() * (H * 0.5) + H * 0.15;
+            const bobSpeed = 0.03 + Math.random() * 0.03;
+            const bobAmp = 5 + Math.random() * 5;
+            lilos.push({ x, y, w: 36, h: 36, bobPhase: Math.random()*Math.PI*2, bobSpeed, bobAmp, baseY: y });
+        }
+
         function spawnEnemy() {
             const side = Math.floor(Math.random() * 4);
             let x, y, vx, vy;
-            const spd = 1.8 + level * 0.4;
-            if (side === 0) { x = -30; y = Math.random() * (H * 0.55); vx = spd; vy = (Math.random()-0.5)*1.5; }
-            else if (side === 1) { x = W+30; y = Math.random() * (H*0.55); vx = -spd; vy = (Math.random()-0.5)*1.5; }
+            const spd = 1.8 + level * 0.35;
+            if (side === 0) { x = -30; y = Math.random()*H*0.85; vx = spd; vy = (Math.random()-0.5)*1.5; }
+            else if (side === 1) { x = W+30; y = Math.random()*H*0.85; vx = -spd; vy = (Math.random()-0.5)*1.5; }
             else if (side === 2) { x = Math.random()*W; y = -30; vx = (Math.random()-0.5)*1.5; vy = spd; }
-            else { x = Math.random()*W; y = -30; vx = (Math.random()-0.5)*1.5; vy = spd; }
-
-            const types = ['🦀','🐚','🐙','🦞','🐡'];
+            else { x = Math.random()*W; y = H+30; vx = (Math.random()-0.5)*1.5; vy = -spd; }
+            const types = ['🦀','🐙','🦞','🐡','🌊'];
             enemies.push({ x, y, vx, vy, w: 28+Math.random()*10, h: 28+Math.random()*10, type: types[Math.floor(Math.random()*types.length)] });
         }
 
-        function spawnShell() {
-            shells.push({ x: Math.random()*(W-60)+30, y: -20, vy: 1.2+Math.random(), w: 22, h: 22 });
+        function spawnCoconut() {
+            const palmX = Math.random() < 0.5 ? W * 0.08 : W * 0.92;
+            coconuts.push({ x: palmX, y: H * 0.3, vx: (Math.random()-0.5)*3, vy: 2+Math.random(), w: 18, h: 18, emoji: '🥥' });
         }
 
         function createParticles(x, y, color, count) {
@@ -152,85 +150,75 @@
         }
 
         function drawBeach() {
-            // sky
-            const sky = ctx.createLinearGradient(0, 0, 0, H * 0.45);
-            sky.addColorStop(0, '#ff7043'); sky.addColorStop(0.4, '#ffb74d'); sky.addColorStop(1, '#81d4fa');
-            ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H * 0.5);
+            const sky = ctx.createLinearGradient(0,0,0,H*0.45);
+            sky.addColorStop(0,'#ff7043'); sky.addColorStop(0.4,'#ffb74d'); sky.addColorStop(1,'#81d4fa');
+            ctx.fillStyle = sky; ctx.fillRect(0,0,W,H*0.5);
 
             // sun
-            const sunX = W * 0.8, sunY = H * 0.18;
-            const sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
-            sg.addColorStop(0, 'rgba(255,241,118,1)'); sg.addColorStop(0.5, 'rgba(255,183,77,0.6)');
-            sg.addColorStop(1, 'rgba(255,183,77,0)');
-            ctx.fillStyle = sg; ctx.fillRect(sunX-80, sunY-80, 160, 160);
-            ctx.beginPath(); ctx.arc(sunX, sunY, 30, 0, Math.PI*2);
-            ctx.fillStyle = '#fff9c4'; ctx.fill();
+            const sunX = W*0.8, sunY = H*0.18;
+            const sg = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,60);
+            sg.addColorStop(0,'rgba(255,241,118,1)'); sg.addColorStop(0.5,'rgba(255,183,77,0.6)'); sg.addColorStop(1,'rgba(255,183,77,0)');
+            ctx.fillStyle = sg; ctx.fillRect(sunX-80,sunY-80,160,160);
+            ctx.beginPath(); ctx.arc(sunX,sunY,30,0,Math.PI*2); ctx.fillStyle='#fff9c4'; ctx.fill();
 
             // clouds
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            const cloudY = H * 0.12;
             for (let i = 0; i < 4; i++) {
-                const cx = ((i * W * 0.3 + frame * 0.3) % (W + 200)) - 100;
-                ctx.beginPath(); ctx.arc(cx, cloudY + i*20, 25, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx+20, cloudY+10+i*20, 20, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx-15, cloudY+12+i*20, 18, 0, Math.PI*2); ctx.fill();
+                const cx = ((i*W*0.3+frame*0.3)%(W+200))-100, cy = H*0.12+i*18;
+                ctx.beginPath(); ctx.arc(cx,cy,22,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx+18,cy+8,17,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx-13,cy+10,15,0,Math.PI*2); ctx.fill();
             }
 
             // water
-            const waterY = H * 0.45;
-            const waterGrad = ctx.createLinearGradient(0, waterY, 0, H * 0.65);
-            waterGrad.addColorStop(0, '#0288d1'); waterGrad.addColorStop(1, '#01579b');
-            ctx.fillStyle = waterGrad; ctx.fillRect(0, waterY, W, H * 0.2);
+            const waterY = H*0.45;
+            const wg = ctx.createLinearGradient(0,waterY,0,H*0.65);
+            wg.addColorStop(0,'#0288d1'); wg.addColorStop(1,'#01579b');
+            ctx.fillStyle = wg; ctx.fillRect(0,waterY,W,H*0.2);
 
             // waves
             ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
-            for (const w of waves) {
+            for (let i = 0; i < waves.length; i++) {
                 ctx.beginPath();
                 for (let x = 0; x <= W; x += 5) {
-                    const y = waterY + Math.sin(x * 0.01 + w.phase + frame * 0.03) * 6 + 15;
-                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                    const y = waterY + Math.sin(x*0.01+waves[i].phase+frame*0.03)*6+15;
+                    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
                 }
                 ctx.stroke();
-                w.phase += 0.005;
+                waves[i].phase += 0.005;
             }
 
             // sand
-            const sandY = H * 0.62;
-            const sand = ctx.createLinearGradient(0, sandY, 0, H);
-            sand.addColorStop(0, '#fdd835'); sand.addColorStop(0.4, '#f9a825'); sand.addColorStop(1, '#e65100');
-            ctx.fillStyle = sand; ctx.fillRect(0, sandY, W, H - sandY);
+            const sandY = H*0.62;
+            const sand = ctx.createLinearGradient(0,sandY,0,H);
+            sand.addColorStop(0,'#fdd835'); sand.addColorStop(0.4,'#f9a825'); sand.addColorStop(1,'#e65100');
+            ctx.fillStyle = sand; ctx.fillRect(0,sandY,W,H-sandY);
 
-            // sand sparkles
             for (let i = 0; i < 15; i++) {
-                const sx = (i * 173 + frame * 0.15) % W;
-                const sy = sandY + 10 + (i * 67) % (H * 0.35);
-                ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.sin(frame*0.06+i)*0.2})`;
-                ctx.fillRect(sx, sy, 2, 2);
+                const sx = (i*173+frame*0.15)%W;
+                const sy = sandY+10+(i*67)%(H*0.35);
+                ctx.fillStyle = `rgba(255,255,255,${0.2+Math.sin(frame*0.06+i)*0.2})`;
+                ctx.fillRect(sx,sy,2,2);
             }
 
-            // palm tree
-            drawPalm(W * 0.08, H * 0.58);
-            drawPalm(W * 0.92, H * 0.56);
-            if (level > 2) drawPalm(W * 0.5, H * 0.54);
+            drawPalm(W*0.08, H*0.58);
+            drawPalm(W*0.92, H*0.56);
+            if (level > 1) drawPalm(W*0.5, H*0.54);
         }
 
         function drawPalm(x, baseY) {
             ctx.fillStyle = '#5d4037';
             ctx.beginPath();
-            ctx.moveTo(x - 6, baseY); ctx.lineTo(x + 6, baseY);
-            ctx.lineTo(x + 4, baseY - 90); ctx.lineTo(x - 4, baseY - 90);
+            ctx.moveTo(x-6,baseY); ctx.lineTo(x+6,baseY); ctx.lineTo(x+4,baseY-90); ctx.lineTo(x-4,baseY-90);
             ctx.fill();
-
-            const topX = x, topY = baseY - 90;
+            const topX = x, topY = baseY-90;
             ctx.fillStyle = '#2e7d32';
             for (let a = 0; a < 6; a++) {
-                const angle = (a / 6) * Math.PI * 2 + Math.sin(frame * 0.02 + a) * 0.1;
-                ctx.beginPath();
-                ctx.moveTo(topX, topY);
-                const ex = topX + Math.cos(angle) * 50;
-                const ey = topY + Math.sin(angle) * 20 - 10;
-                ctx.quadraticCurveTo(topX + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 - 20, ex, ey);
-                ctx.quadraticCurveTo(topX + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 + 5, topX, topY);
+                const angle = (a/6)*Math.PI*2 + Math.sin(frame*0.02+a)*0.1;
+                ctx.beginPath(); ctx.moveTo(topX,topY);
+                const ex = topX+Math.cos(angle)*50, ey = topY+Math.sin(angle)*20-10;
+                ctx.quadraticCurveTo(topX+Math.cos(angle)*25, topY+Math.sin(angle)*5-20, ex, ey);
+                ctx.quadraticCurveTo(topX+Math.cos(angle)*25, topY+Math.sin(angle)*5+5, topX, topY);
                 ctx.fill();
             }
         }
@@ -239,14 +227,12 @@
             frame++;
 
             stitch.vx = 0; stitch.vy = 0;
-            if (keys['ArrowLeft'] || keys['a']) stitch.vx = -stitch.speed;
-            if (keys['ArrowRight'] || keys['d']) stitch.vx = stitch.speed;
-            if (keys['ArrowUp'] || keys['w']) stitch.vy = -stitch.speed;
-            if (keys['ArrowDown'] || keys['s']) stitch.vy = stitch.speed;
-
+            if (keys['ArrowLeft']||keys['a']) stitch.vx = -stitch.speed;
+            if (keys['ArrowRight']||keys['d']) stitch.vx = stitch.speed;
+            if (keys['ArrowUp']||keys['w']) stitch.vy = -stitch.speed;
+            if (keys['ArrowDown']||keys['s']) stitch.vy = stitch.speed;
             if (mouseDown) {
-                const dx = mouseX - stitch.x, dy = mouseY - stitch.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const dx = mouseX-stitch.x, dy = mouseY-stitch.y, dist = Math.sqrt(dx*dx+dy*dy);
                 if (dist > 5) { stitch.vx = (dx/dist)*stitch.speed; stitch.vy = (dy/dist)*stitch.speed; }
             }
 
@@ -254,97 +240,152 @@
             stitch.x = Math.max(stitch.w/2, Math.min(W-stitch.w/2, stitch.x));
             stitch.y = Math.max(stitch.h/2, Math.min(H-stitch.h/2, stitch.y));
 
-            if (invincible) { invincibleTimer--; if (invincibleTimer <= 0) invincible = false; }
+            if (invincible) { invincibleTimer--; if (invincibleTimer<=0) invincible = false; }
 
             spawnTimer++;
-            if (spawnTimer > Math.max(35, 80 - level * 4)) { spawnEnemy(); spawnTimer = 0; }
+            if (spawnTimer > Math.max(40, 90-level*4)) { spawnEnemy(); spawnTimer = 0; }
 
-            shellTimer++;
-            if (shellTimer > 250) { spawnShell(); shellTimer = 0; }
+            if (frame % 180 === 0 && coconuts.length < 3) spawnCoconut();
 
-            for (let i = enemies.length - 1; i >= 0; i--) {
+            // lilos bobbing
+            for (const l of lilos) {
+                l.y = l.baseY + Math.sin(frame * l.bobSpeed + l.bobPhase) * l.bobAmp;
+            }
+
+            for (let i = enemies.length-1; i >= 0; i--) {
                 const e = enemies[i]; e.x += e.vx; e.y += e.vy;
-                if (e.x < -50 || e.x > W+50 || e.y < -50 || e.y > H+50) { enemies.splice(i,1); continue; }
+                if (e.x<-50||e.x>W+50||e.y<-50||e.y>H+50) { enemies.splice(i,1); continue; }
                 const dx = stitch.x-e.x, dy = stitch.y-e.y;
-                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2 + e.w/2) {
+                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2+e.w/2) {
                     if (!invincible) {
-                        lives--; createParticles(stitch.x, stitch.y, '#ff5252', 15);
+                        lives--; createParticles(stitch.x,stitch.y,'#ff5252',15);
                         invincible = true; invincibleTimer = 80;
-                        if (lives <= 0) { gameOver(); return; }
+                        if (lives<=0) { gameOver(); return; }
                     }
-                    createParticles(e.x, e.y, '#ffb74d', 10); enemies.splice(i,1);
+                    createParticles(e.x,e.y,'#ffb74d',10); enemies.splice(i,1);
                 }
             }
 
-            for (let i = shells.length - 1; i >= 0; i--) {
-                const s = shells[i]; s.y += s.vy;
-                if (s.y > H + 20) { shells.splice(i,1); continue; }
-                const dx = stitch.x-s.x, dy = stitch.y-s.y;
-                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2 + s.w/2) {
-                    score += 50; createParticles(s.x, s.y, '#ffd54f', 20); shells.splice(i,1);
+            for (let i = coconuts.length-1; i >= 0; i--) {
+                const c = coconuts[i]; c.x += c.vx; c.y += c.vy;
+                if (c.y > H+20||c.x<-20||c.x>W+20) { coconuts.splice(i,1); continue; }
+                const dx = stitch.x-c.x, dy = stitch.y-c.y;
+                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2+c.w/2) {
+                    if (!invincible) {
+                        lives--; createParticles(stitch.x,stitch.y,'#8d6e63',12);
+                        invincible = true; invincibleTimer = 60;
+                        if (lives<=0) { gameOver(); return; }
+                    }
+                    coconuts.splice(i,1);
                 }
             }
 
-            if (score >= level * 200) { level++; createParticles(W/2, H/2, '#00e5ff', 30); }
-
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy *= 0.95; p.life--;
-                if (p.life <= 0) particles.splice(i,1);
+            for (let i = lilos.length-1; i >= 0; i--) {
+                const l = lilos[i];
+                const dx = stitch.x-l.x, dy = stitch.y-l.y;
+                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2+l.w/2) {
+                    collected++;
+                    createParticles(l.x,l.y,'#ff80ab',25);
+                    lilos.splice(i,1);
+                    if (collected >= totalLilos) { winGame(); return; }
+                }
             }
 
-            document.getElementById('score').textContent = score;
+            if (collected > 0 && collected % 5 === 0 && lilos.length === 0) {
+                level++; totalLilos += 5;
+                document.getElementById('total').textContent = totalLilos;
+                for (let i = 0; i < totalLilos - collected; i++) spawnLilo();
+            }
+
+            for (let i = particles.length-1; i >= 0; i--) {
+                const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=0.95; p.vy*=0.95; p.life--;
+                if (p.life<=0) particles.splice(i,1);
+            }
+
+            document.getElementById('score').textContent = collected;
             document.getElementById('lives').textContent = lives;
             document.getElementById('level').textContent = level;
         }
 
         function draw() {
-            ctx.clearRect(0, 0, W, H);
+            ctx.clearRect(0,0,W,H);
             drawBeach();
 
-            ctx.font = '36px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-            for (const s of shells) {
-                ctx.save(); ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 15;
-                ctx.fillText('🐚', s.x, s.y); ctx.restore();
+            // lilos
+            for (const l of lilos) {
+                ctx.save();
+                ctx.shadowColor = '#ff80ab'; ctx.shadowBlur = 18;
+                ctx.font = '32px serif';
+                ctx.fillText('👧', l.x, l.y);
+                ctx.restore();
             }
 
+            // coconuts
+            for (const c of coconuts) {
+                ctx.font = '22px serif';
+                ctx.fillText(c.emoji, c.x, c.y);
+            }
+
+            // enemies
             for (const e of enemies) {
                 ctx.font = `${e.w}px serif`;
                 ctx.fillText(e.type, e.x, e.y);
             }
 
+            // stitch
             ctx.save();
-            if (invincible && Math.floor(frame/4)%2 === 0) ctx.globalAlpha = 0.35;
-            if (invincible) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20; }
+            if (invincible && Math.floor(frame/4)%2===0) ctx.globalAlpha = 0.35;
+            if (invincible) { ctx.shadowColor='#00e5ff'; ctx.shadowBlur=20; }
             ctx.font = `${stitch.w}px serif`;
             ctx.fillText(stitch.emoji, stitch.x, stitch.y);
             ctx.restore();
 
+            // particles
             for (const p of particles) {
-                const a = p.life / p.maxLife;
-                ctx.globalAlpha = a; ctx.fillStyle = p.color;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.size*a, 0, Math.PI*2); ctx.fill();
+                const a = p.life/p.maxLife;
+                ctx.globalAlpha=a; ctx.fillStyle=p.color;
+                ctx.beginPath(); ctx.arc(p.x,p.y,p.size*a,0,Math.PI*2); ctx.fill();
             }
-            ctx.globalAlpha = 1;
+            ctx.globalAlpha=1;
+
+            // trail effect when moving
+            if (Math.abs(stitch.vx) > 0.5 || Math.abs(stitch.vy) > 0.5) {
+                ctx.globalAlpha = 0.2;
+                ctx.font = `${stitch.w*0.6}px serif`;
+                ctx.fillText(stitch.emoji, stitch.x - stitch.vx*1.5, stitch.y - stitch.vy*1.5);
+                ctx.globalAlpha = 1;
+            }
         }
 
         function gameOver() {
             gameRunning = false;
-            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalScore').textContent = collected;
+            document.getElementById('finalTotal').textContent = totalLilos;
             document.getElementById('gameOverScreen').style.display = 'flex';
         }
 
+        function winGame() {
+            gameRunning = false;
+            document.getElementById('winScreen').style.display = 'flex';
+        }
+
         function resetGame() {
-            score = 0; lives = 3; level = 1; spawnTimer = 0; shellTimer = 0; frame = 0;
-            particles = []; enemies = []; shells = []; invincible = false;
+            collected = 0; lives = 3; level = 1; totalLilos = 10;
+            frame = 0; spawnTimer = 0; invincible = false;
+            particles = []; enemies = []; lilos = []; coconuts = [];
             stitch.x = W/2; stitch.y = H/2; stitch.vx = 0; stitch.vy = 0;
+            document.getElementById('total').textContent = totalLilos;
+            for (let i = 0; i < totalLilos; i++) spawnLilo();
             gameRunning = true;
         }
 
         function loop() { if (gameRunning) { update(); draw(); } requestAnimationFrame(loop); }
 
-        document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('startScreen').style.display = 'none'; resetGame(); });
-        document.getElementById('restartBtn').addEventListener('click', () => { document.getElementById('gameOverScreen').style.display = 'none'; resetGame(); });
+        document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('startScreen').style.display='none'; resetGame(); });
+        document.getElementById('restartBtn').addEventListener('click', () => { document.getElementById('gameOverScreen').style.display='none'; resetGame(); });
+        document.getElementById('restartBtn2').addEventListener('click', () => { document.getElementById('winScreen').style.display='none'; resetGame(); });
 
         stitch.x = W/2; stitch.y = H/2;
         loop();
