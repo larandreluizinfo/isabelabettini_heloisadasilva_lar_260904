@@ -24,7 +24,7 @@
             text-transform: uppercase; letter-spacing: 2px;
         }
         #startBtn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
-        #gameCanvas { display: block; width: 100vw; height: 100vh; }
+        #gameCanvas { display: block; width: 100vw; height: 100vh; pointer-events: none; }
         #hud {
             position: fixed; top: 0; left: 0; right: 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -582,6 +582,7 @@
 
         function gameOver() {
             gameRunning = false;
+            canvas.style.pointerEvents = 'none';
             document.getElementById('finalScore').textContent = collected;
             document.getElementById('finalLevel').textContent = level;
             document.getElementById('gameOverScreen').style.display = 'flex';
@@ -590,6 +591,7 @@
 
         function winGame() {
             gameRunning = false;
+            canvas.style.pointerEvents = 'none';
             document.getElementById('winScreen').style.display = 'flex';
             startWinAnimation();
         }
@@ -620,6 +622,7 @@
             document.getElementById('total').textContent = totalItems;
             for (var n = 0; n < totalItems; n++) spawnCollectible();
             gameRunning = true;
+            canvas.style.pointerEvents = 'auto';
         }
 
         function loop() {
