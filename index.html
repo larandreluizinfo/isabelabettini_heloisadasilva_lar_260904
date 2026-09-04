@@ -41,11 +41,18 @@
         .hud-item span { color: #ffd54f; }
 
         #gameOverScreen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none;
+            position: fixed; inset: 0; display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 50;
         }
-        #gameOverScreen h1 { font-size: 3rem; color: #ff8a65; margin-bottom: 10px; }
-        #gameOverScreen p { color: white; font-size: 1.5rem; margin-bottom: 30px; }
+        #loseCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #loseContent {
+            position: relative; z-index: 2; text-align: center;
+            background: rgba(0,0,0,0.3); padding: 40px 60px; border-radius: 25px;
+        }
+        #loseContent h1 { font-size: 3rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        #loseContent p { color: #ffe0b2; font-size: 1.5rem; margin-bottom: 30px; }
+        #loseContent .btn-main { background: linear-gradient(135deg, #ff8f00, #e65100); color: white; }
+        #loseContent .btn-main:hover { box-shadow: 0 0 30px rgba(255,143,0,0.6); }
         .btn-main {
             padding: 15px 50px; font-size: 1.3rem; border: none; border-radius: 50px;
             background: linear-gradient(135deg, #ff6f00, #d84315); color: white;
@@ -86,9 +93,12 @@
     </div>
 
     <div id="gameOverScreen">
-        <h1>Fim de Jogo!</h1>
-        <p>Coletáveis: <span id="finalScore">0</span> / <span id="finalTotal">10</span></p>
-        <button id="restartBtn" class="btn-main">Jogar Novamente</button>
+        <canvas id="loseCanvas"></canvas>
+        <div id="loseContent">
+            <h1 id="loseTitle">Fim de Jogo!</h1>
+            <p id="loseMsg">Coletáveis: <span id="finalScore">0</span> / <span id="finalTotal">10</span></p>
+            <button id="restartBtn" class="btn-main">Jogar Novamente</button>
+        </div>
     </div>
 
     <div id="winScreen">
@@ -453,6 +463,220 @@
             document.getElementById('winScreen').style.display = 'flex';
         }
 
+        // ===== LOSE SCREEN SAND ANIMATION =====
+        const loseCanvas = document.getElementById('loseCanvas');
+        const lctx = loseCanvas.getContext('2d');
+        let lW, lH, loseFrame = 0, loseActive = false;
+        let sandGrains = [], loseShells = [], loseFootprints = [], loseWaves2 = [], loseStarfish = [];
+
+        function resizeLose() {
+            lW = loseCanvas.width = window.innerWidth;
+            lH = loseCanvas.height = window.innerHeight;
+        }
+        resizeLose();
+        window.addEventListener('resize', resizeLose);
+
+        function initLoseScene() {
+            loseFrame = 0; loseActive = true;
+            sandGrains = []; loseShells = []; loseFootprints = []; loseWaves2 = []; loseStarfish = [];
+
+            for (let i = 0; i < 120; i++) {
+                sandGrains.push({
+                    x: Math.random()*lW, y: lH*0.3+Math.random()*lH*0.7,
+                    r: 1+Math.random()*2.5, speed: 0.2+Math.random()*0.6,
+                    drift: (Math.random()-0.5)*0.5, alpha: 0.3+Math.random()*0.5,
+                    color: Math.random()<0.5 ? '#fdd835' : '#f9a825'
+                });
+            }
+
+            const shellEmojis = ['🐚','🐚','🐚','🦪','🪸'];
+            for (let i = 0; i < 10; i++) {
+                loseShells.push({
+                    x: Math.random()*lW, y: lH*0.55+Math.random()*lH*0.35,
+                    emoji: shellEmojis[Math.floor(Math.random()*shellEmojis.length)],
+                    size: 16+Math.random()*16, bobPhase: Math.random()*Math.PI*2
+                });
+            }
+
+            for (let i = 0; i < 5; i++) {
+                loseFootprints.push({
+                    x: Math.random()*lW*0.8+lW*0.1, y: lH*0.5+Math.random()*lH*0.3,
+                    alpha: 0.15+Math.random()*0.15
+                });
+            }
+
+            for (let i = 0; i < 3; i++) {
+                loseWaves2.push({ phase: Math.random()*Math.PI*2, y: lH*0.32+i*15, amp: 5+Math.random()*4 });
+            }
+
+            for (let i = 0; i < 4; i++) {
+                loseStarfish.push({
+                    x: Math.random()*lW, y: lH*0.6+Math.random()*lH*0.3,
+                    size: 18+Math.random()*10, rot: Math.random()*0.3-0.15,
+                    phase: Math.random()*Math.PI*2
+                });
+            }
+        }
+
+        function updateLose() {
+            loseFrame++;
+            for (const g of sandGrains) {
+                g.x += g.drift; g.y += g.speed;
+                if (g.y > lH+5) { g.y = lH*0.3; g.x = Math.random()*lW; }
+            }
+        }
+
+        function drawLose() {
+            // sky top
+            const skyG = lctx.createLinearGradient(0, 0, 0, lH*0.35);
+            skyG.addColorStop(0, '#ffab40'); skyG.addColorStop(1, '#ff8f00');
+            lctx.fillStyle = skyG; lctx.fillRect(0, 0, lW, lH*0.38);
+
+            // sun setting
+            const sunX = lW*0.5, sunY = lH*0.28;
+            const sg = lctx.createRadialGradient(sunX,sunY,0,sunX,sunY,55);
+            sg.addColorStop(0, 'rgba(255,236,179,1)'); sg.addColorStop(0.6, 'rgba(255,183,77,0.5)');
+            sg.addColorStop(1, 'rgba(255,152,0,0)');
+            lctx.fillStyle = sg; lctx.fillRect(sunX-70,sunY-70,140,140);
+            lctx.beginPath(); lctx.arc(sunX,sunY,25,0,Math.PI*2); lctx.fillStyle='#fff9c4'; lctx.fill();
+
+            // distant water
+            const waterG = lctx.createLinearGradient(0,lH*0.32,0,lH*0.42);
+            waterG.addColorStop(0,'#0288d1'); waterG.addColorStop(1,'#01579b');
+            lctx.fillStyle = waterG; lctx.fillRect(0,lH*0.32,lW,lH*0.1);
+
+            // waves
+            lctx.strokeStyle = 'rgba(255,255,255,0.3)'; lctx.lineWidth = 2;
+            for (const w of loseWaves2) {
+                lctx.beginPath();
+                for (let x = 0; x <= lW; x += 4) {
+                    const y = w.y + Math.sin(x*0.01+w.phase+loseFrame*0.025)*w.amp;
+                    x===0 ? lctx.moveTo(x,y) : lctx.lineTo(x,y);
+                }
+                lctx.stroke();
+            }
+
+            // sand area
+            const sandY = lH*0.4;
+            const sandG = lctx.createLinearGradient(0,sandY,0,lH);
+            sandG.addColorStop(0, '#fdd835'); sandG.addColorStop(0.3, '#f9a825');
+            sandG.addColorStop(0.7, '#f57f17'); sandG.addColorStop(1, '#e65100');
+            lctx.fillStyle = sandG; lctx.fillRect(0, sandY, lW, lH-sandY);
+
+            // sand texture lines
+            lctx.strokeStyle = 'rgba(0,0,0,0.05)'; lctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+                const ly = sandY+20+i*(lH-sandY)*0.1;
+                lctx.beginPath();
+                for (let x = 0; x <= lW; x += 6) {
+                    const y = ly + Math.sin(x*0.015+i*1.5+loseFrame*0.008)*3;
+                    x===0 ? lctx.moveTo(x,y) : lctx.lineTo(x,y);
+                }
+                lctx.stroke();
+            }
+
+            // footprints
+            lctx.fillStyle = 'rgba(180,130,60,0.3)';
+            for (const fp of loseFootprints) {
+                lctx.globalAlpha = fp.alpha;
+                // left footprint
+                lctx.beginPath();
+                lctx.ellipse(fp.x, fp.y, 6, 10, -0.2, 0, Math.PI*2); lctx.fill();
+                lctx.beginPath();
+                lctx.ellipse(fp.x-8, fp.y-5, 3, 5, 0.3, 0, Math.PI*2); lctx.fill();
+                // right footprint
+                lctx.beginPath();
+                lctx.ellipse(fp.x+20, fp.y-8, 6, 10, 0.2, 0, Math.PI*2); lctx.fill();
+                lctx.beginPath();
+                lctx.ellipse(fp.x+28, fp.y-13, 3, 5, -0.3, 0, Math.PI*2); lctx.fill();
+            }
+            lctx.globalAlpha = 1;
+
+            // sand grains falling
+            for (const g of sandGrains) {
+                lctx.globalAlpha = g.alpha;
+                lctx.fillStyle = g.color;
+                lctx.beginPath(); lctx.arc(g.x, g.y, g.r, 0, Math.PI*2); lctx.fill();
+            }
+            lctx.globalAlpha = 1;
+
+            // shells
+            lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+            for (const s of loseShells) {
+                const sy = s.y + Math.sin(loseFrame*0.02+s.bobPhase)*2;
+                lctx.font = `${s.size}px serif`;
+                lctx.fillText(s.emoji, s.x, sy);
+            }
+
+            // starfish
+            for (const s of loseStarfish) {
+                lctx.save();
+                lctx.translate(s.x, s.y);
+                lctx.rotate(s.rot + Math.sin(loseFrame*0.01+s.phase)*0.05);
+                lctx.font = `${s.size}px serif`;
+                lctx.fillText('⭐', 0, 0);
+                lctx.restore();
+            }
+
+            // fallen Stitch & Lilo in sand
+            const cx = lW*0.5, cy = lH*0.6;
+            lctx.font = '50px serif'; lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+            lctx.save();
+            lctx.translate(cx-25, cy);
+            lctx.rotate(0.3);
+            lctx.fillText('👧🏿', 0, 0);
+            lctx.restore();
+            lctx.save();
+            lctx.translate(cx+30, cy+5);
+            lctx.rotate(-0.25);
+            lctx.fillText('👽', 0, 0);
+            lctx.restore();
+
+            // "Zzz" sleep bubbles
+            for (let i = 0; i < 3; i++) {
+                const zx = cx+40+i*15;
+                const zy = cy-30-i*18+Math.sin(loseFrame*0.04+i)*5;
+                const za = 0.6-i*0.15;
+                lctx.globalAlpha = za;
+                lctx.font = `${14+i*4}px Segoe UI, sans-serif`;
+                lctx.fillStyle = 'white';
+                lctx.fillText('z', zx, zy);
+            }
+            lctx.globalAlpha = 1;
+
+            // wind particles (sand blowing)
+            lctx.strokeStyle = 'rgba(255,236,179,0.2)'; lctx.lineWidth = 1;
+            for (let i = 0; i < 6; i++) {
+                const wx = ((loseFrame*2+i*200)%(lW+200))-100;
+                const wy = lH*0.45+i*lH*0.06;
+                lctx.beginPath();
+                lctx.moveTo(wx, wy);
+                lctx.lineTo(wx+30+Math.sin(loseFrame*0.03+i)*10, wy-2);
+                lctx.stroke();
+            }
+
+            // vignette
+            const vig = lctx.createRadialGradient(lW/2,lH/2,lW*0.2,lW/2,lH/2,lW*0.8);
+            vig.addColorStop(0, 'rgba(0,0,0,0)');
+            vig.addColorStop(1, 'rgba(0,0,0,0.4)');
+            lctx.fillStyle = vig; lctx.fillRect(0,0,lW,lH);
+        }
+
+        function loseLoop() {
+            if (!loseActive) return;
+            updateLose(); drawLose();
+            requestAnimationFrame(loseLoop);
+        }
+
+        const origGameOver = gameOver;
+        gameOver = function() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = collected;
+            document.getElementById('finalTotal').textContent = totalItems;
+            document.getElementById('gameOverScreen').style.display = 'flex';
+            resizeLose(); initLoseScene(); loseLoop();
+        };
+
         function resetGame() {
             collected = 0; lives = 3; level = 1; totalItems = 10;
             frame = 0; spawnTimer = 0; invincible = false;
@@ -467,7 +691,7 @@
         function loop() { if (gameRunning) { update(); draw(); } requestAnimationFrame(loop); }
 
         document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('startScreen').style.display='none'; resetGame(); });
-        document.getElementById('restartBtn').addEventListener('click', () => { document.getElementById('gameOverScreen').style.display='none'; resetGame(); });
+        document.getElementById('restartBtn').addEventListener('click', () => { loseActive = false; document.getElementById('gameOverScreen').style.display='none'; resetGame(); });
         document.getElementById('restartBtn2').addEventListener('click', () => { winActive = false; document.getElementById('winScreen').style.display='none'; resetGame(); });
 
         // ===== WIN SCREEN OCEAN ANIMATION =====
