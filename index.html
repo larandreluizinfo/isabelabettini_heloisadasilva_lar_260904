@@ -55,12 +55,18 @@
         .btn-main:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
 
         #winScreen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none;
+            position: fixed; inset: 0; display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 55;
         }
-        #winScreen h1 { font-size: 3rem; color: #76ff03; margin-bottom: 10px; }
-        #winScreen p { color: white; font-size: 1.5rem; margin-bottom: 30px; }
-        #winScreen .btn-main { background: linear-gradient(135deg, #76ff03, #00c853); color: #1a1a2e; }
+        #winCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #winContent {
+            position: relative; z-index: 2; text-align: center;
+            background: rgba(0,0,0,0.35); padding: 40px 60px; border-radius: 25px;
+        }
+        #winContent h1 { font-size: 3.5rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.6); margin-bottom: 8px; }
+        #winContent p { color: #e0f7fa; font-size: 1.4rem; margin-bottom: 25px; }
+        #winContent .btn-main { background: linear-gradient(135deg, #00bcd4, #0097a7); color: white; }
+        #winContent .btn-main:hover { box-shadow: 0 0 30px rgba(0,188,212,0.6); }
     </style>
 </head>
 <body>
@@ -86,9 +92,12 @@
     </div>
 
     <div id="winScreen">
-        <h1>Ohana!</h1>
-        <p>Tudo coletado! Lilo e Stitch juntos! 🌺</p>
-        <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
+        <canvas id="winCanvas"></canvas>
+        <div id="winContent">
+            <h1 id="winTitle">Ohana!</h1>
+            <p id="winMsg">Lilo e Stitch navegando juntos! 🌊</p>
+            <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
+        </div>
     </div>
 
     <script>
@@ -459,7 +468,191 @@
 
         document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('startScreen').style.display='none'; resetGame(); });
         document.getElementById('restartBtn').addEventListener('click', () => { document.getElementById('gameOverScreen').style.display='none'; resetGame(); });
-        document.getElementById('restartBtn2').addEventListener('click', () => { document.getElementById('winScreen').style.display='none'; resetGame(); });
+        document.getElementById('restartBtn2').addEventListener('click', () => { winActive = false; document.getElementById('winScreen').style.display='none'; resetGame(); });
+
+        // ===== WIN SCREEN OCEAN ANIMATION =====
+        const winCanvas = document.getElementById('winCanvas');
+        const wctx = winCanvas.getContext('2d');
+        let wW, wH, winFrame = 0, winActive = false;
+        let winFish = [], winBubbles = [], winWaves = [], winCorals = [], winStars = [];
+
+        function resizeWin() {
+            wW = winCanvas.width = window.innerWidth;
+            wH = winCanvas.height = window.innerHeight;
+        }
+        resizeWin();
+        window.addEventListener('resize', resizeWin);
+
+        function initWinScene() {
+            winFrame = 0; winActive = true;
+            winFish = []; winBubbles = []; winWaves = []; winCorals = []; winStars = [];
+
+            for (let i = 0; i < 6; i++) {
+                winFish.push({
+                    x: Math.random()*wW, y: wH*0.3+Math.random()*wH*0.35,
+                    speed: 0.8+Math.random()*1.5, dir: Math.random()<0.5?1:-1,
+                    emoji: ['🐟','🐠','🐡','🦈','🐬','🐙'][i],
+                    size: 22+Math.random()*14, bobPhase: Math.random()*Math.PI*2
+                });
+            }
+
+            for (let i = 0; i < 25; i++) {
+                winBubbles.push({
+                    x: Math.random()*wW, y: wH*0.5+Math.random()*wH*0.5,
+                    r: 2+Math.random()*5, speed: 0.3+Math.random()*0.8,
+                    phase: Math.random()*Math.PI*2
+                });
+            }
+
+            for (let i = 0; i < 4; i++) {
+                winWaves.push({ phase: Math.random()*Math.PI*2, speed: 0.015+Math.random()*0.01, amp: 8+Math.random()*6, y: wH*0.38+i*12 });
+            }
+
+            const coralEmojis = ['🪸','🪸','🪸'];
+            for (let i = 0; i < 8; i++) {
+                winCorals.push({ x: Math.random()*wW, y: wH*0.82+Math.random()*wH*0.12,
+                    emoji: coralEmojis[Math.floor(Math.random()*coralEmojis.length)],
+                    size: 20+Math.random()*18 });
+            }
+
+            for (let i = 0; i < 12; i++) {
+                winStars.push({ x: Math.random()*wW, y: wH*0.75+Math.random()*wH*0.15,
+                    phase: Math.random()*Math.PI*2 });
+            }
+        }
+
+        function updateWin() {
+            winFrame++;
+
+            for (const f of winFish) {
+                f.x += f.speed * f.dir;
+                if (f.x > wW+50) { f.x = -40; f.y = wH*0.3+Math.random()*wH*0.35; }
+                if (f.x < -50) { f.x = wW+40; f.y = wH*0.3+Math.random()*wH*0.35; }
+            }
+
+            for (const b of winBubbles) {
+                b.y -= b.speed;
+                b.x += Math.sin(winFrame*0.03+b.phase)*0.4;
+                if (b.y < wH*0.2) { b.y = wH*0.5+Math.random()*wH*0.5; b.x = Math.random()*wW; }
+            }
+        }
+
+        function drawWin() {
+            // deep ocean gradient
+            const g = wctx.createLinearGradient(0,0,0,wH);
+            g.addColorStop(0, '#0277bd'); g.addColorStop(0.25, '#01579b');
+            g.addColorStop(0.5, '#0d47a1'); g.addColorStop(0.75, '#0a2351');
+            g.addColorStop(1, '#061233');
+            wctx.fillStyle = g; wctx.fillRect(0,0,wW,wH);
+
+            // light rays from surface
+            wctx.save(); wctx.globalAlpha = 0.06;
+            for (let i = 0; i < 5; i++) {
+                const rx = wW*0.15+i*wW*0.18;
+                const grd = wctx.createLinearGradient(rx, 0, rx+40, wH*0.7);
+                grd.addColorStop(0, '#4fc3f7'); grd.addColorStop(1, 'transparent');
+                wctx.fillStyle = grd;
+                wctx.beginPath();
+                wctx.moveTo(rx, 0); wctx.lineTo(rx+80, 0);
+                wctx.lineTo(rx+120+Math.sin(winFrame*0.01+i)*20, wH*0.7);
+                wctx.lineTo(rx+60+Math.sin(winFrame*0.01+i)*20, wH*0.7);
+                wctx.fill();
+            }
+            wctx.restore();
+
+            // waves at surface
+            for (const w of winWaves) {
+                wctx.strokeStyle = 'rgba(129,212,250,0.3)'; wctx.lineWidth = 2;
+                wctx.beginPath();
+                for (let x = 0; x <= wW; x += 4) {
+                    const y = w.y + Math.sin(x*0.008+w.phase+winFrame*w.speed)*w.amp;
+                    x===0 ? wctx.moveTo(x,y) : wctx.lineTo(x,y);
+                }
+                wctx.stroke();
+            }
+
+            // bubbles
+            for (const b of winBubbles) {
+                wctx.globalAlpha = 0.25+Math.sin(winFrame*0.05+b.phase)*0.15;
+                wctx.strokeStyle = 'rgba(179,229,252,0.7)'; wctx.lineWidth = 1;
+                wctx.beginPath(); wctx.arc(b.x, b.y, b.r, 0, Math.PI*2); wctx.stroke();
+                // highlight
+                wctx.fillStyle = 'rgba(255,255,255,0.3)';
+                wctx.beginPath(); wctx.arc(b.x-b.r*0.3, b.y-b.r*0.3, b.r*0.25, 0, Math.PI*2); wctx.fill();
+            }
+            wctx.globalAlpha = 1;
+
+            // fish
+            wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
+            for (const f of winFish) {
+                const by = f.y + Math.sin(winFrame*0.04+f.bobPhase)*6;
+                wctx.save();
+                wctx.font = `${f.size}px serif`;
+                if (f.dir < 0) { wctx.translate(f.x, by); wctx.scale(-1,1); wctx.fillText(f.emoji,0,0); }
+                else { wctx.fillText(f.emoji, f.x, by); }
+                wctx.restore();
+            }
+
+            // coral & starfish
+            for (const c of winCorals) {
+                wctx.font = `${c.size}px serif`;
+                wctx.fillText(c.emoji, c.x, c.y);
+            }
+            for (const s of winStars) {
+                const sy = s.y + Math.sin(winFrame*0.02+s.phase)*3;
+                wctx.save();
+                wctx.shadowColor = '#ffd54f'; wctx.shadowBlur = 8;
+                wctx.font = '20px serif';
+                wctx.fillText('⭐', s.x, sy);
+                wctx.restore();
+            }
+
+            // Lilo & Stitch on surfboard
+            const surfX = wW*0.5 + Math.sin(winFrame*0.015)*60;
+            const surfY = wH*0.38 + Math.sin(winFrame*0.025)*8;
+
+            // surfboard
+            wctx.save();
+            wctx.translate(surfX, surfY);
+            wctx.rotate(Math.sin(winFrame*0.02)*0.08);
+            wctx.fillStyle = '#ff6f00';
+            wctx.beginPath();
+            wctx.ellipse(0, 12, 45, 8, 0, 0, Math.PI*2);
+            wctx.fill();
+            wctx.fillStyle = '#ffab00';
+            wctx.beginPath();
+            wctx.ellipse(0, 12, 30, 5, 0, 0, Math.PI*2);
+            wctx.fill();
+            // characters on surfboard
+            wctx.font = '36px serif'; wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
+            wctx.fillText('👧🏿', -18, -5);
+            wctx.fillText('👽', 18, -5);
+            wctx.restore();
+
+            // sparkles
+            for (let i = 0; i < 8; i++) {
+                const sx = (i*wW*0.13+winFrame*0.5)%wW;
+                const sy = wH*0.1+Math.sin(winFrame*0.03+i*2)*wH*0.35;
+                const brightness = Math.sin(winFrame*0.08+i)*0.4+0.5;
+                wctx.fillStyle = `rgba(255,255,255,${brightness})`;
+                wctx.beginPath(); wctx.arc(sx,sy,1.5,0,Math.PI*2); wctx.fill();
+            }
+        }
+
+        function winLoop() {
+            if (!winActive) return;
+            updateWin(); drawWin();
+            requestAnimationFrame(winLoop);
+        }
+
+        const origWin = winGame;
+        winGame = function() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = collected;
+            document.getElementById('finalTotal').textContent = totalItems;
+            document.getElementById('winScreen').style.display = 'flex';
+            resizeWin(); initWinScene(); winLoop();
+        };
 
         stitch.x = W/2; stitch.y = H/2;
         lilo.x = W/2-55; lilo.y = H/2+15;
