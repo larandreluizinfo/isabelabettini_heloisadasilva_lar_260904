@@ -7,7 +7,6 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
-
         #startScreen {
             position: fixed; inset: 0;
             background: linear-gradient(180deg, #ff7e5f 0%, #feb47b 40%, #86a8e7 70%, #0077b6 100%);
@@ -25,9 +24,7 @@
             text-transform: uppercase; letter-spacing: 2px;
         }
         #startBtn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
-
         #gameCanvas { display: block; width: 100vw; height: 100vh; }
-
         #hud {
             position: fixed; top: 0; left: 0; right: 0;
             display: flex; justify-content: space-between; align-items: center;
@@ -39,7 +36,6 @@
             background: rgba(0,0,0,0.25); padding: 8px 16px; border-radius: 20px;
         }
         .hud-item span { color: #ffd54f; }
-
         #gameOverScreen {
             position: fixed; inset: 0; display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 50;
@@ -52,7 +48,6 @@
         #loseContent h1 { font-size: 3rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.5); margin-bottom: 10px; }
         #loseContent p { color: #ffe0b2; font-size: 1.5rem; margin-bottom: 30px; }
         #loseContent .btn-main { background: linear-gradient(135deg, #ff8f00, #e65100); color: white; }
-        #loseContent .btn-main:hover { box-shadow: 0 0 30px rgba(255,143,0,0.6); }
         .btn-main {
             padding: 15px 50px; font-size: 1.3rem; border: none; border-radius: 50px;
             background: linear-gradient(135deg, #ff6f00, #d84315); color: white;
@@ -60,7 +55,6 @@
             text-transform: uppercase; letter-spacing: 2px;
         }
         .btn-main:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
-
         #winScreen {
             position: fixed; inset: 0; display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 55;
@@ -73,7 +67,6 @@
         #winContent h1 { font-size: 3.5rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.6); margin-bottom: 8px; }
         #winContent p { color: #e0f7fa; font-size: 1.4rem; margin-bottom: 25px; }
         #winContent .btn-main { background: linear-gradient(135deg, #00bcd4, #0097a7); color: white; }
-        #winContent .btn-main:hover { box-shadow: 0 0 30px rgba(0,188,212,0.6); }
     </style>
 </head>
 <body>
@@ -95,8 +88,8 @@
     <div id="gameOverScreen">
         <canvas id="loseCanvas"></canvas>
         <div id="loseContent">
-            <h1 id="loseTitle">Fim de Jogo!</h1>
-            <p id="loseMsg">Coletáveis: <span id="finalScore">0</span> / <span id="finalTotal">10</span></p>
+            <h1>Fim de Jogo!</h1>
+            <p>Nível: <span id="finalLevel">1</span> | Coletáveis: <span id="finalScore">0</span></p>
             <button id="restartBtn" class="btn-main">Jogar Novamente</button>
         </div>
     </div>
@@ -104,156 +97,224 @@
     <div id="winScreen">
         <canvas id="winCanvas"></canvas>
         <div id="winContent">
-            <h1 id="winTitle">Ohana!</h1>
-            <p id="winMsg">Nível 500 alcançado! Lilo e Stitch navegando juntos! 🌊</p>
+            <h1>Ohana!</h1>
+            <p>Nível 500 alcançado! Lilo e Stitch navegando juntos! 🌊</p>
             <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let W, H;
-        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    (function() {
+        var canvas = document.getElementById('gameCanvas');
+        var ctx = canvas.getContext('2d');
+        var W, H;
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
         resize();
         window.addEventListener('resize', resize);
 
-        let gameRunning = false, collected = 0, totalItems = 5, lives = 3, level = 1;
-        let frame = 0, spawnTimer = 0, invincible = false, invincibleTimer = 0;
-        let particles = [], enemies = [], collectibles = [], coconuts = [], waves = [], bubbles = [];
-        for (let i = 0; i < 5; i++) waves.push({ phase: Math.random()*Math.PI*2 });
+        var gameRunning = false;
+        var collected = 0;
+        var totalItems = 5;
+        var lives = 3;
+        var level = 1;
+        var frame = 0;
+        var spawnTimer = 0;
+        var invincible = false;
+        var invincibleTimer = 0;
+        var particles = [];
+        var enemies = [];
+        var collectibles = [];
+        var coconuts = [];
+        var waves = [];
+        var bubbles = [];
 
-        const stitch = { x: 0, y: 0, w: 44, h: 44, vx: 0, vy: 0, speed: 5.5, dir: 1 };
-        const lilo = { x: 0, y: 0, w: 42, h: 42, vx: 0, vy: 0, targetX: 0, targetY: 0, bobPhase: 0, dir: 1 };
+        for (var i = 0; i < 5; i++) {
+            waves.push({ phase: Math.random() * Math.PI * 2 });
+        }
 
-        const keys = {};
-        document.addEventListener('keydown', e => keys[e.key] = true);
-        document.addEventListener('keyup', e => keys[e.key] = false);
-        let mouseX = 0, mouseY = 0, mouseDown = false;
-        canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
-        canvas.addEventListener('mousedown', () => mouseDown = true);
-        canvas.addEventListener('mouseup', () => mouseDown = false);
-        canvas.addEventListener('touchstart', e => { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mouseDown = true; });
-        canvas.addEventListener('touchmove', e => { e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; });
-        canvas.addEventListener('touchend', () => mouseDown = false);
+        var stitch = { x: W / 2, y: H / 2, w: 44, h: 44, vx: 0, vy: 0, speed: 5.5, dir: 1 };
+        var lilo = { x: W / 2 - 55, y: H / 2 + 15, w: 42, h: 42, vx: 0, vy: 0, targetX: 0, targetY: 0, bobPhase: 0, dir: -1 };
+
+        var keys = {};
+        document.addEventListener('keydown', function(e) { keys[e.key] = true; });
+        document.addEventListener('keyup', function(e) { keys[e.key] = false; });
+
+        var mouseX = 0, mouseY = 0, mouseDown = false;
+        canvas.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
+        canvas.addEventListener('mousedown', function() { mouseDown = true; });
+        canvas.addEventListener('mouseup', function() { mouseDown = false; });
+        canvas.addEventListener('touchstart', function(e) {
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+            mouseDown = true;
+        });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            mouseX = e.touches[0].clientX;
+            mouseY = e.touches[0].clientY;
+        });
+        canvas.addEventListener('touchend', function() { mouseDown = false; });
 
         function spawnCollectible() {
-            const items = ['🌺','🌸','🍹','🐚','⭐','🎵','🏄','🍉','🎸','🍍'];
-            const x = Math.random()*(W-80)+40;
-            const y = Math.random()*(H*0.45)+H*0.18;
+            var items = ['🌺','🌸','🍹','🐚','⭐','🎵','🏄','🍉','🎸','🍍'];
             collectibles.push({
-                x, y, w: 30, h: 30, type: items[Math.floor(Math.random()*items.length)],
-                bobPhase: Math.random()*Math.PI*2, bobSpeed: 0.03+Math.random()*0.03,
-                bobAmp: 4+Math.random()*4, baseY: y, glow: Math.random()*Math.PI*2
+                x: Math.random() * (W - 80) + 40,
+                y: Math.random() * (H * 0.45) + H * 0.18,
+                w: 30, h: 30,
+                type: items[Math.floor(Math.random() * items.length)],
+                bobPhase: Math.random() * Math.PI * 2,
+                bobSpeed: 0.03 + Math.random() * 0.03,
+                bobAmp: 4 + Math.random() * 4,
+                baseY: 0,
+                glow: Math.random() * Math.PI * 2
             });
+            collectibles[collectibles.length - 1].baseY = collectibles[collectibles.length - 1].y;
         }
 
         function spawnEnemy() {
-            const side = Math.floor(Math.random()*4);
-            let x, y, vx, vy;
-            const spd = 1.6+Math.sqrt(level)*0.2;
-            if (side===0) { x=-30; y=Math.random()*H*0.85; vx=spd; vy=(Math.random()-0.5)*1.5; }
-            else if (side===1) { x=W+30; y=Math.random()*H*0.85; vx=-spd; vy=(Math.random()-0.5)*1.5; }
-            else if (side===2) { x=Math.random()*W; y=-30; vx=(Math.random()-0.5)*1.5; vy=spd; }
-            else { x=Math.random()*W; y=H+30; vx=(Math.random()-0.5)*1.5; vy=-spd; }
-            const types = ['🦀','🐙','🦞','🐡'];
-            enemies.push({ x, y, vx, vy, w: 28+Math.random()*10, h: 28+Math.random()*10, type: types[Math.floor(Math.random()*types.length)], rot: 0 });
+            var side = Math.floor(Math.random() * 4);
+            var x, y, vx, vy;
+            var spd = 1.6 + Math.sqrt(level) * 0.2;
+            if (side === 0) { x = -30; y = Math.random() * H * 0.85; vx = spd; vy = (Math.random() - 0.5) * 1.5; }
+            else if (side === 1) { x = W + 30; y = Math.random() * H * 0.85; vx = -spd; vy = (Math.random() - 0.5) * 1.5; }
+            else if (side === 2) { x = Math.random() * W; y = -30; vx = (Math.random() - 0.5) * 1.5; vy = spd; }
+            else { x = Math.random() * W; y = H + 30; vx = (Math.random() - 0.5) * 1.5; vy = -spd; }
+            var types = ['🦀','🐙','🦞','🐡'];
+            enemies.push({
+                x: x, y: y, vx: vx, vy: vy,
+                w: 28 + Math.random() * 10, h: 28 + Math.random() * 10,
+                type: types[Math.floor(Math.random() * types.length)], rot: 0
+            });
         }
 
         function spawnCoconut() {
-            const px = Math.random()<0.5 ? W*0.08 : W*0.92;
-            coconuts.push({ x: px, y: H*0.28, vx: (Math.random()-0.5)*3, vy: 2.2+Math.random(), w: 18, h: 18 });
+            var px = Math.random() < 0.5 ? W * 0.08 : W * 0.92;
+            coconuts.push({ x: px, y: H * 0.28, vx: (Math.random() - 0.5) * 3, vy: 2.2 + Math.random(), w: 18, h: 18 });
         }
 
-        function spawnBubble(x, y) {
-            bubbles.push({ x: x+(Math.random()-0.5)*20, y, vy: -1-Math.random()*2, life: 40+Math.random()*20, r: 2+Math.random()*3 });
+        function spawnBubble(bx, by) {
+            bubbles.push({ x: bx + (Math.random() - 0.5) * 20, y: by, vy: -1 - Math.random() * 2, life: 40 + Math.random() * 20, r: 2 + Math.random() * 3 });
         }
 
-        function createParticles(x, y, color, count) {
-            for (let i = 0; i < count; i++) {
-                particles.push({ x, y, vx: (Math.random()-0.5)*8, vy: (Math.random()-0.5)*8,
-                    life: 25+Math.random()*15, maxLife: 40, color, size: 2+Math.random()*3 });
+        function createParticles(px, py, color, count) {
+            for (var i = 0; i < count; i++) {
+                particles.push({
+                    x: px, y: py,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 25 + Math.random() * 15,
+                    maxLife: 40,
+                    color: color,
+                    size: 2 + Math.random() * 3
+                });
             }
         }
 
         function drawBeach() {
-            const sky = ctx.createLinearGradient(0,0,0,H*0.45);
-            sky.addColorStop(0,'#ff7043'); sky.addColorStop(0.4,'#ffb74d'); sky.addColorStop(1,'#81d4fa');
-            ctx.fillStyle = sky; ctx.fillRect(0,0,W,H*0.5);
+            var sky = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+            sky.addColorStop(0, '#ff7043');
+            sky.addColorStop(0.4, '#ffb74d');
+            sky.addColorStop(1, '#81d4fa');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, W, H * 0.5);
 
-            const sunX = W*0.8, sunY = H*0.18;
-            const sg = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,60);
-            sg.addColorStop(0,'rgba(255,241,118,1)'); sg.addColorStop(0.5,'rgba(255,183,77,0.6)'); sg.addColorStop(1,'rgba(255,183,77,0)');
-            ctx.fillStyle = sg; ctx.fillRect(sunX-80,sunY-80,160,160);
-            ctx.beginPath(); ctx.arc(sunX,sunY,30,0,Math.PI*2); ctx.fillStyle='#fff9c4'; ctx.fill();
+            var sunX = W * 0.8, sunY = H * 0.18;
+            var sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
+            sg.addColorStop(0, 'rgba(255,241,118,1)');
+            sg.addColorStop(0.5, 'rgba(255,183,77,0.6)');
+            sg.addColorStop(1, 'rgba(255,183,77,0)');
+            ctx.fillStyle = sg;
+            ctx.fillRect(sunX - 80, sunY - 80, 160, 160);
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 30, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff9c4';
+            ctx.fill();
 
             ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            for (let i = 0; i < 4; i++) {
-                const cx = ((i*W*0.3+frame*0.3)%(W+200))-100, cy = H*0.12+i*18;
-                ctx.beginPath(); ctx.arc(cx,cy,22,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx+18,cy+8,17,0,Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx-13,cy+10,15,0,Math.PI*2); ctx.fill();
+            for (var i = 0; i < 4; i++) {
+                var cx = ((i * W * 0.3 + frame * 0.3) % (W + 200)) - 100;
+                var cy = H * 0.12 + i * 18;
+                ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx + 18, cy + 8, 17, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx - 13, cy + 10, 15, 0, Math.PI * 2); ctx.fill();
             }
 
-            const waterY = H*0.45;
-            const wg = ctx.createLinearGradient(0,waterY,0,H*0.65);
-            wg.addColorStop(0,'#0288d1'); wg.addColorStop(1,'#01579b');
-            ctx.fillStyle = wg; ctx.fillRect(0,waterY,W,H*0.2);
+            var waterY = H * 0.45;
+            var wg = ctx.createLinearGradient(0, waterY, 0, H * 0.65);
+            wg.addColorStop(0, '#0288d1');
+            wg.addColorStop(1, '#01579b');
+            ctx.fillStyle = wg;
+            ctx.fillRect(0, waterY, W, H * 0.2);
 
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2;
-            for (const w of waves) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            for (var wi = 0; wi < waves.length; wi++) {
                 ctx.beginPath();
-                for (let x = 0; x <= W; x += 5) {
-                    const y = waterY+Math.sin(x*0.01+w.phase+frame*0.03)*6+15;
-                    x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+                for (var x = 0; x <= W; x += 5) {
+                    var y = waterY + Math.sin(x * 0.01 + waves[wi].phase + frame * 0.03) * 6 + 15;
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
                 }
                 ctx.stroke();
-                w.phase += 0.005;
+                waves[wi].phase += 0.005;
             }
 
-            const sandY = H*0.62;
-            const sand = ctx.createLinearGradient(0,sandY,0,H);
-            sand.addColorStop(0,'#fdd835'); sand.addColorStop(0.4,'#f9a825'); sand.addColorStop(1,'#e65100');
-            ctx.fillStyle = sand; ctx.fillRect(0,sandY,W,H-sandY);
+            var sandY = H * 0.62;
+            var sand = ctx.createLinearGradient(0, sandY, 0, H);
+            sand.addColorStop(0, '#fdd835');
+            sand.addColorStop(0.4, '#f9a825');
+            sand.addColorStop(1, '#e65100');
+            ctx.fillStyle = sand;
+            ctx.fillRect(0, sandY, W, H - sandY);
 
-            for (let i = 0; i < 15; i++) {
-                const sx = (i*173+frame*0.15)%W, sy = sandY+10+(i*67)%(H*0.35);
-                ctx.fillStyle = `rgba(255,255,255,${0.2+Math.sin(frame*0.06+i)*0.2})`;
-                ctx.fillRect(sx,sy,2,2);
+            for (var si = 0; si < 15; si++) {
+                var sx = (si * 173 + frame * 0.15) % W;
+                var sy = sandY + 10 + (si * 67) % (H * 0.35);
+                ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + Math.sin(frame * 0.06 + si) * 0.2) + ')';
+                ctx.fillRect(sx, sy, 2, 2);
             }
 
-            drawPalm(W*0.08, H*0.58); drawPalm(W*0.92, H*0.56);
-            if (level > 1) drawPalm(W*0.5, H*0.54);
+            drawPalm(W * 0.08, H * 0.58);
+            drawPalm(W * 0.92, H * 0.56);
+            if (level > 1) drawPalm(W * 0.5, H * 0.54);
         }
 
-        function drawPalm(x, baseY) {
+        function drawPalm(px, baseY) {
             ctx.fillStyle = '#5d4037';
             ctx.beginPath();
-            ctx.moveTo(x-6,baseY); ctx.lineTo(x+6,baseY); ctx.lineTo(x+4,baseY-90); ctx.lineTo(x-4,baseY-90);
+            ctx.moveTo(px - 6, baseY); ctx.lineTo(px + 6, baseY);
+            ctx.lineTo(px + 4, baseY - 90); ctx.lineTo(px - 4, baseY - 90);
             ctx.fill();
-            const topY = baseY-90;
+            var topY = baseY - 90;
             ctx.fillStyle = '#2e7d32';
-            for (let a = 0; a < 6; a++) {
-                const angle = (a/6)*Math.PI*2+Math.sin(frame*0.02+a)*0.1;
-                ctx.beginPath(); ctx.moveTo(x,topY);
-                const ex = x+Math.cos(angle)*50, ey = topY+Math.sin(angle)*20-10;
-                ctx.quadraticCurveTo(x+Math.cos(angle)*25, topY+Math.sin(angle)*5-20, ex, ey);
-                ctx.quadraticCurveTo(x+Math.cos(angle)*25, topY+Math.sin(angle)*5+5, x, topY);
+            for (var a = 0; a < 6; a++) {
+                var angle = (a / 6) * Math.PI * 2 + Math.sin(frame * 0.02 + a) * 0.1;
+                ctx.beginPath();
+                ctx.moveTo(px, topY);
+                var ex = px + Math.cos(angle) * 50;
+                var ey = topY + Math.sin(angle) * 20 - 10;
+                ctx.quadraticCurveTo(px + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 - 20, ex, ey);
+                ctx.quadraticCurveTo(px + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 + 5, px, topY);
                 ctx.fill();
             }
         }
 
-        function drawCharacter(emoji, x, y, size, dir, isInvincible, alpha) {
+        function drawCharacter(emoji, ex, ey, size, dir, isInv) {
             ctx.save();
-            if (alpha !== undefined) ctx.globalAlpha = alpha;
-            if (isInvincible && Math.floor(frame/4)%2===0) ctx.globalAlpha = 0.35;
-            ctx.font = `${size}px serif`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            if (isInv && Math.floor(frame / 4) % 2 === 0) ctx.globalAlpha = 0.35;
+            ctx.font = size + 'px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             if (dir < 0) {
-                ctx.translate(x, y); ctx.scale(-1, 1);
+                ctx.translate(ex, ey);
+                ctx.scale(-1, 1);
                 ctx.fillText(emoji, 0, 0);
             } else {
-                ctx.fillText(emoji, x, y);
+                ctx.fillText(emoji, ex, ey);
             }
             ctx.restore();
         }
@@ -261,114 +322,166 @@
         function update() {
             frame++;
 
-            // Stitch movement
-            stitch.vx = 0; stitch.vy = 0;
-            if (keys['ArrowLeft']||keys['a']) { stitch.vx = -stitch.speed; stitch.dir = -1; }
-            if (keys['ArrowRight']||keys['d']) { stitch.vx = stitch.speed; stitch.dir = 1; }
-            if (keys['ArrowUp']||keys['w']) stitch.vy = -stitch.speed;
-            if (keys['ArrowDown']||keys['s']) stitch.vy = stitch.speed;
+            stitch.vx = 0;
+            stitch.vy = 0;
+            if (keys['ArrowLeft'] || keys['a']) { stitch.vx = -stitch.speed; stitch.dir = -1; }
+            if (keys['ArrowRight'] || keys['d']) { stitch.vx = stitch.speed; stitch.dir = 1; }
+            if (keys['ArrowUp'] || keys['w']) stitch.vy = -stitch.speed;
+            if (keys['ArrowDown'] || keys['s']) stitch.vy = stitch.speed;
+
             if (mouseDown) {
-                const dx = mouseX-stitch.x, dy = mouseY-stitch.y, dist = Math.sqrt(dx*dx+dy*dy);
+                var dx = mouseX - stitch.x;
+                var dy = mouseY - stitch.y;
+                var dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 5) {
-                    stitch.vx = (dx/dist)*stitch.speed; stitch.vy = (dy/dist)*stitch.speed;
+                    stitch.vx = (dx / dist) * stitch.speed;
+                    stitch.vy = (dy / dist) * stitch.speed;
                     stitch.dir = dx > 0 ? 1 : -1;
                 }
             }
 
-            stitch.x += stitch.vx; stitch.y += stitch.vy;
-            stitch.x = Math.max(stitch.w/2, Math.min(W-stitch.w/2, stitch.x));
-            stitch.y = Math.max(stitch.h/2, Math.min(H-stitch.h/2, stitch.y));
+            stitch.x += stitch.vx;
+            stitch.y += stitch.vy;
+            stitch.x = Math.max(stitch.w / 2, Math.min(W - stitch.w / 2, stitch.x));
+            stitch.y = Math.max(stitch.h / 2, Math.min(H - stitch.h / 2, stitch.y));
 
-            // Lilo follows Stitch
-            const liloOffsetX = -55, liloOffsetY = 15;
-            lilo.targetX = stitch.x + liloOffsetX * stitch.dir;
-            lilo.targetY = stitch.y + liloOffsetY + Math.sin(frame*0.06)*4;
-            const ldx = lilo.targetX - lilo.x, ldy = lilo.targetY - lilo.y;
-            lilo.x += ldx * 0.08; lilo.y += ldy * 0.08;
-            lilo.dir = ldx < -1 ? -1 : ldx > 1 ? 1 : lilo.dir;
+            lilo.targetX = stitch.x - 55 * stitch.dir;
+            lilo.targetY = stitch.y + 15 + Math.sin(frame * 0.06) * 4;
+            var ldx = lilo.targetX - lilo.x;
+            var ldy = lilo.targetY - lilo.y;
+            lilo.x += ldx * 0.08;
+            lilo.y += ldy * 0.08;
+            if (ldx < -1) lilo.dir = -1;
+            else if (ldx > 1) lilo.dir = 1;
 
-            if (invincible) { invincibleTimer--; if (invincibleTimer<=0) invincible = false; }
+            if (invincible) {
+                invincibleTimer--;
+                if (invincibleTimer <= 0) invincible = false;
+            }
 
             spawnTimer++;
-            if (spawnTimer > Math.max(15, 90-level*0.15)) { spawnEnemy(); spawnTimer = 0; }
-            if (frame % Math.max(60, 180-level*0.2) === 0 && coconuts.length < Math.min(8, 3+Math.floor(level/50))) spawnCoconut();
-
-            for (const c of collectibles) {
-                c.y = c.baseY + Math.sin(frame*c.bobSpeed+c.bobPhase)*c.bobAmp;
-                c.glow += 0.05;
+            var spawnLimit = Math.max(15, 90 - level * 0.15);
+            if (spawnTimer > spawnLimit) {
+                spawnEnemy();
+                spawnTimer = 0;
             }
 
-            // bubbles near water
-            if (frame % 10 === 0) spawnBubble(Math.random()*W, H*0.5+Math.random()*H*0.12);
+            var coconutInterval = Math.max(60, 180 - level * 0.2);
+            if (frame % Math.floor(coconutInterval) === 0 && coconuts.length < Math.min(8, 3 + Math.floor(level / 50))) {
+                spawnCoconut();
+            }
 
-            // collision: enemies vs stitch
-            for (let i = enemies.length-1; i >= 0; i--) {
-                const e = enemies[i]; e.x += e.vx; e.y += e.vy; e.rot += 0.05;
-                if (e.x<-50||e.x>W+50||e.y<-50||e.y>H+50) { enemies.splice(i,1); continue; }
+            for (var ci = 0; ci < collectibles.length; ci++) {
+                var cc = collectibles[ci];
+                cc.y = cc.baseY + Math.sin(frame * cc.bobSpeed + cc.bobPhase) * cc.bobAmp;
+                cc.glow += 0.05;
+            }
 
-                const dxs = stitch.x-e.x, dys = stitch.y-e.y;
-                if (Math.sqrt(dxs*dxs+dys*dys) < stitch.w/2+e.w/2) {
-                    if (!invincible) {
-                        lives--; createParticles(stitch.x,stitch.y,'#ff5252',15);
-                        invincible = true; invincibleTimer = 80;
-                        if (lives<=0) { gameOver(); return; }
-                    }
-                    createParticles(e.x,e.y,'#ffb74d',10); enemies.splice(i,1); continue;
+            if (frame % 10 === 0) {
+                spawnBubble(Math.random() * W, H * 0.5 + Math.random() * H * 0.12);
+            }
+
+            for (var ei = enemies.length - 1; ei >= 0; ei--) {
+                var e = enemies[ei];
+                e.x += e.vx;
+                e.y += e.vy;
+                e.rot += 0.05;
+                if (e.x < -50 || e.x > W + 50 || e.y < -50 || e.y > H + 50) {
+                    enemies.splice(ei, 1);
+                    continue;
                 }
 
-                const dxl = lilo.x-e.x, dyl = lilo.y-e.y;
-                if (Math.sqrt(dxl*dxl+dyl*dyl) < lilo.w/2+e.w/2) {
+                var dxs = stitch.x - e.x;
+                var dys = stitch.y - e.y;
+                if (Math.sqrt(dxs * dxs + dys * dys) < stitch.w / 2 + e.w / 2) {
                     if (!invincible) {
-                        lives--; createParticles(lilo.x,lilo.y,'#ff5252',15);
-                        invincible = true; invincibleTimer = 80;
-                        if (lives<=0) { gameOver(); return; }
+                        lives--;
+                        createParticles(stitch.x, stitch.y, '#ff5252', 15);
+                        invincible = true;
+                        invincibleTimer = 80;
+                        if (lives <= 0) { gameOver(); return; }
                     }
-                    createParticles(e.x,e.y,'#ffb74d',10); enemies.splice(i,1);
+                    createParticles(e.x, e.y, '#ffb74d', 10);
+                    enemies.splice(ei, 1);
+                    continue;
+                }
+
+                var dxl = lilo.x - e.x;
+                var dyl = lilo.y - e.y;
+                if (Math.sqrt(dxl * dxl + dyl * dyl) < lilo.w / 2 + e.w / 2) {
+                    if (!invincible) {
+                        lives--;
+                        createParticles(lilo.x, lilo.y, '#ff5252', 15);
+                        invincible = true;
+                        invincibleTimer = 80;
+                        if (lives <= 0) { gameOver(); return; }
+                    }
+                    createParticles(e.x, e.y, '#ffb74d', 10);
+                    enemies.splice(ei, 1);
                 }
             }
 
-            // coconuts
-            for (let i = coconuts.length-1; i >= 0; i--) {
-                const c = coconuts[i]; c.x += c.vx; c.y += c.vy;
-                if (c.y>H+20||c.x<-20||c.x>W+20) { coconuts.splice(i,1); continue; }
-                const dx = stitch.x-c.x, dy = stitch.y-c.y;
-                if (Math.sqrt(dx*dx+dy*dy) < stitch.w/2+c.w/2) {
+            for (var coi = coconuts.length - 1; coi >= 0; coi--) {
+                var co = coconuts[coi];
+                co.x += co.vx;
+                co.y += co.vy;
+                if (co.y > H + 20 || co.x < -20 || co.x > W + 20) {
+                    coconuts.splice(coi, 1);
+                    continue;
+                }
+                var dcx = stitch.x - co.x;
+                var dcy = stitch.y - co.y;
+                if (Math.sqrt(dcx * dcx + dcy * dcy) < stitch.w / 2 + co.w / 2) {
                     if (!invincible) {
-                        lives--; createParticles(stitch.x,stitch.y,'#8d6e63',12);
-                        invincible = true; invincibleTimer = 60;
-                        if (lives<=0) { gameOver(); return; }
+                        lives--;
+                        createParticles(stitch.x, stitch.y, '#8d6e63', 12);
+                        invincible = true;
+                        invincibleTimer = 60;
+                        if (lives <= 0) { gameOver(); return; }
                     }
-                    coconuts.splice(i,1);
+                    coconuts.splice(coi, 1);
                 }
             }
 
-            // collectibles - stitch OR lilo can collect
-            for (let i = collectibles.length-1; i >= 0; i--) {
-                const c = collectibles[i];
-                const ds = Math.sqrt((stitch.x-c.x)**2+(stitch.y-c.y)**2);
-                const dl = Math.sqrt((lilo.x-c.x)**2+(lilo.y-c.y)**2);
-                if (ds < stitch.w/2+c.w/2 || dl < lilo.w/2+c.w/2) {
+            for (var coli = collectibles.length - 1; coli >= 0; coli--) {
+                var col = collectibles[coli];
+                var ds = Math.sqrt((stitch.x - col.x) * (stitch.x - col.x) + (stitch.y - col.y) * (stitch.y - col.y));
+                var dl = Math.sqrt((lilo.x - col.x) * (lilo.x - col.x) + (lilo.y - col.y) * (lilo.y - col.y));
+                if (ds < stitch.w / 2 + col.w / 2 || dl < lilo.w / 2 + col.w / 2) {
                     collected++;
-                    createParticles(c.x,c.y,'#ff80ab',20);
-                    createParticles(c.x,c.y,'#ffd54f',10);
-                    collectibles.splice(i,1);
+                    createParticles(col.x, col.y, '#ff80ab', 20);
+                    createParticles(col.x, col.y, '#ffd54f', 10);
+                    collectibles.splice(coli, 1);
                     if (collected >= totalItems) {
-                        if (level >= 500) { winGame(); return; }
-                        level++; collected = 0; totalItems = 5;
+                        if (level >= 500) {
+                            winGame();
+                            return;
+                        }
+                        level++;
+                        collected = 0;
+                        totalItems = 5;
                         document.getElementById('total').textContent = totalItems;
-                        for (let j = 0; j < totalItems; j++) spawnCollectible();
+                        for (var n = 0; n < totalItems; n++) spawnCollectible();
                     }
                 }
             }
 
-            for (let i = particles.length-1; i >= 0; i--) {
-                const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=0.95; p.vy*=0.95; p.life--;
-                if (p.life<=0) particles.splice(i,1);
+            for (var pi = particles.length - 1; pi >= 0; pi--) {
+                var p = particles[pi];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.95;
+                p.vy *= 0.95;
+                p.life--;
+                if (p.life <= 0) particles.splice(pi, 1);
             }
 
-            for (let i = bubbles.length-1; i >= 0; i--) {
-                const b = bubbles[i]; b.y += b.vy; b.x += Math.sin(frame*0.1+i)*0.3; b.life--;
-                if (b.life<=0) bubbles.splice(i,1);
+            for (var bi = bubbles.length - 1; bi >= 0; bi--) {
+                var b = bubbles[bi];
+                b.y += b.vy;
+                b.x += Math.sin(frame * 0.1 + bi) * 0.3;
+                b.life--;
+                if (b.life <= 0) bubbles.splice(bi, 1);
             }
 
             document.getElementById('score').textContent = collected;
@@ -377,75 +490,92 @@
         }
 
         function draw() {
-            ctx.clearRect(0,0,W,H);
+            ctx.clearRect(0, 0, W, H);
             drawBeach();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-
-            // bubbles
-            for (const b of bubbles) {
-                const a = b.life/60;
-                ctx.globalAlpha = a*0.5;
-                ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.stroke();
+            for (var bi = 0; bi < bubbles.length; bi++) {
+                var b = bubbles[bi];
+                var a = b.life / 60;
+                ctx.globalAlpha = a * 0.5;
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.stroke();
             }
             ctx.globalAlpha = 1;
 
-            // collectibles with glow
-            for (const c of collectibles) {
+            for (var ci = 0; ci < collectibles.length; ci++) {
+                var c = collectibles[ci];
                 ctx.save();
-                ctx.shadowColor = '#ffd54f'; ctx.shadowBlur = 12+Math.sin(c.glow)*6;
-                ctx.font = '28px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowColor = '#ffd54f';
+                ctx.shadowBlur = 12 + Math.sin(c.glow) * 6;
+                ctx.font = '28px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
                 ctx.fillText(c.type, c.x, c.y);
                 ctx.restore();
             }
 
-            // coconuts
-            ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            for (const c of coconuts) { ctx.fillText('🥥', c.x, c.y); }
+            ctx.font = '22px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (var coi = 0; coi < coconuts.length; coi++) {
+                ctx.fillText('🥥', coconuts[coi].x, coconuts[coi].y);
+            }
 
-            // enemies
-            for (const e of enemies) {
+            for (var ei = 0; ei < enemies.length; ei++) {
+                var e = enemies[ei];
                 ctx.save();
-                ctx.font = `${e.w}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.translate(e.x, e.y); ctx.rotate(e.rot);
+                ctx.font = e.w + 'px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.translate(e.x, e.y);
+                ctx.rotate(e.rot);
                 ctx.fillText(e.type, 0, 0);
                 ctx.restore();
             }
 
-            // Lilo
             if (invincible) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20; }
             drawCharacter('👧🏿', lilo.x, lilo.y, lilo.w, lilo.dir, invincible);
-            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
 
-            // Stitch
             if (invincible) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20; }
             drawCharacter('👽', stitch.x, stitch.y, stitch.w, stitch.dir, invincible);
-            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
 
-            // name tags
             ctx.font = 'bold 11px Segoe UI, sans-serif';
-            ctx.fillStyle = '#fff'; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 3;
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.lineWidth = 3;
             ctx.textAlign = 'center';
-            ctx.strokeText('Stitch', stitch.x, stitch.y-stitch.w/2-10);
-            ctx.fillText('Stitch', stitch.x, stitch.y-stitch.w/2-10);
+            ctx.strokeText('Stitch', stitch.x, stitch.y - stitch.w / 2 - 10);
+            ctx.fillText('Stitch', stitch.x, stitch.y - stitch.w / 2 - 10);
             ctx.fillStyle = '#fff8e1';
-            ctx.strokeText('Lilo', lilo.x, lilo.y-lilo.w/2-10);
-            ctx.fillText('Lilo', lilo.x, lilo.y-lilo.w/2-10);
+            ctx.strokeText('Lilo', lilo.x, lilo.y - lilo.w / 2 - 10);
+            ctx.fillText('Lilo', lilo.x, lilo.y - lilo.w / 2 - 10);
 
-            // particles
-            for (const p of particles) {
-                const a = p.life/p.maxLife;
-                ctx.globalAlpha=a; ctx.fillStyle=p.color;
-                ctx.beginPath(); ctx.arc(p.x,p.y,p.size*a,0,Math.PI*2); ctx.fill();
+            for (var pi = 0; pi < particles.length; pi++) {
+                var p = particles[pi];
+                var pa = p.life / p.maxLife;
+                ctx.globalAlpha = pa;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * pa, 0, Math.PI * 2);
+                ctx.fill();
             }
-            ctx.globalAlpha=1;
+            ctx.globalAlpha = 1;
 
-            // stitch trail
-            if (Math.abs(stitch.vx)>0.5||Math.abs(stitch.vy)>0.5) {
+            if (Math.abs(stitch.vx) > 0.5 || Math.abs(stitch.vy) > 0.5) {
                 ctx.globalAlpha = 0.15;
-                ctx.font = `${stitch.w*0.5}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('👽', stitch.x-stitch.vx*2, stitch.y-stitch.vy*2);
+                ctx.font = (stitch.w * 0.5) + 'px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('👽', stitch.x - stitch.vx * 2, stitch.y - stitch.vy * 2);
                 ctx.globalAlpha = 1;
             }
         }
@@ -453,20 +583,73 @@
         function gameOver() {
             gameRunning = false;
             document.getElementById('finalScore').textContent = collected;
-            document.getElementById('finalTotal').textContent = totalItems;
+            document.getElementById('finalLevel').textContent = level;
             document.getElementById('gameOverScreen').style.display = 'flex';
+            startLoseAnimation();
         }
 
         function winGame() {
             gameRunning = false;
             document.getElementById('winScreen').style.display = 'flex';
+            startWinAnimation();
         }
 
-        // ===== LOSE SCREEN SAND ANIMATION =====
-        const loseCanvas = document.getElementById('loseCanvas');
-        const lctx = loseCanvas.getContext('2d');
-        let lW, lH, loseFrame = 0, loseActive = false;
-        let sandGrains = [], loseShells = [], loseFootprints = [], loseWaves2 = [], loseStarfish = [];
+        function resetGame() {
+            collected = 0;
+            lives = 3;
+            level = 1;
+            totalItems = 5;
+            frame = 0;
+            spawnTimer = 0;
+            invincible = false;
+            particles = [];
+            enemies = [];
+            collectibles = [];
+            coconuts = [];
+            bubbles = [];
+            stitch.x = W / 2;
+            stitch.y = H / 2;
+            stitch.vx = 0;
+            stitch.vy = 0;
+            stitch.dir = 1;
+            lilo.x = W / 2 - 55;
+            lilo.y = H / 2 + 15;
+            lilo.vx = 0;
+            lilo.vy = 0;
+            lilo.dir = -1;
+            document.getElementById('total').textContent = totalItems;
+            for (var n = 0; n < totalItems; n++) spawnCollectible();
+            gameRunning = true;
+        }
+
+        function loop() {
+            if (gameRunning) {
+                update();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('startBtn').addEventListener('click', function() {
+            document.getElementById('startScreen').style.display = 'none';
+            resetGame();
+        });
+        document.getElementById('restartBtn').addEventListener('click', function() {
+            loseActive = false;
+            document.getElementById('gameOverScreen').style.display = 'none';
+            resetGame();
+        });
+        document.getElementById('restartBtn2').addEventListener('click', function() {
+            winActive = false;
+            document.getElementById('winScreen').style.display = 'none';
+            resetGame();
+        });
+
+        // ===== LOSE SCREEN =====
+        var loseCanvas = document.getElementById('loseCanvas');
+        var lctx = loseCanvas.getContext('2d');
+        var lW, lH, loseFrame = 0, loseActive = false;
+        var sandGrains = [], loseShells = [], loseFootprints = [], loseWaves2 = [], loseStarfish = [];
 
         function resizeLose() {
             lW = loseCanvas.width = window.innerWidth;
@@ -476,228 +659,226 @@
         window.addEventListener('resize', resizeLose);
 
         function initLoseScene() {
-            loseFrame = 0; loseActive = true;
-            sandGrains = []; loseShells = []; loseFootprints = []; loseWaves2 = []; loseStarfish = [];
+            loseFrame = 0;
+            loseActive = true;
+            sandGrains = [];
+            loseShells = [];
+            loseFootprints = [];
+            loseWaves2 = [];
+            loseStarfish = [];
 
-            for (let i = 0; i < 120; i++) {
+            for (var i = 0; i < 120; i++) {
                 sandGrains.push({
-                    x: Math.random()*lW, y: lH*0.3+Math.random()*lH*0.7,
-                    r: 1+Math.random()*2.5, speed: 0.2+Math.random()*0.6,
-                    drift: (Math.random()-0.5)*0.5, alpha: 0.3+Math.random()*0.5,
-                    color: Math.random()<0.5 ? '#fdd835' : '#f9a825'
+                    x: Math.random() * lW, y: lH * 0.3 + Math.random() * lH * 0.7,
+                    r: 1 + Math.random() * 2.5, speed: 0.2 + Math.random() * 0.6,
+                    drift: (Math.random() - 0.5) * 0.5, alpha: 0.3 + Math.random() * 0.5,
+                    color: Math.random() < 0.5 ? '#fdd835' : '#f9a825'
                 });
             }
 
-            const shellEmojis = ['🐚','🐚','🐚','🦪','🪸'];
-            for (let i = 0; i < 10; i++) {
+            var shellEmojis = ['🐚','🦪','🪸'];
+            for (var j = 0; j < 10; j++) {
                 loseShells.push({
-                    x: Math.random()*lW, y: lH*0.55+Math.random()*lH*0.35,
-                    emoji: shellEmojis[Math.floor(Math.random()*shellEmojis.length)],
-                    size: 16+Math.random()*16, bobPhase: Math.random()*Math.PI*2
+                    x: Math.random() * lW, y: lH * 0.55 + Math.random() * lH * 0.35,
+                    emoji: shellEmojis[Math.floor(Math.random() * shellEmojis.length)],
+                    size: 16 + Math.random() * 16, bobPhase: Math.random() * Math.PI * 2
                 });
             }
 
-            for (let i = 0; i < 5; i++) {
+            for (var k = 0; k < 5; k++) {
                 loseFootprints.push({
-                    x: Math.random()*lW*0.8+lW*0.1, y: lH*0.5+Math.random()*lH*0.3,
-                    alpha: 0.15+Math.random()*0.15
+                    x: Math.random() * lW * 0.8 + lW * 0.1,
+                    y: lH * 0.5 + Math.random() * lH * 0.3,
+                    alpha: 0.15 + Math.random() * 0.15
                 });
             }
 
-            for (let i = 0; i < 3; i++) {
-                loseWaves2.push({ phase: Math.random()*Math.PI*2, y: lH*0.32+i*15, amp: 5+Math.random()*4 });
+            for (var m = 0; m < 3; m++) {
+                loseWaves2.push({ phase: Math.random() * Math.PI * 2, y: lH * 0.32 + m * 15, amp: 5 + Math.random() * 4 });
             }
 
-            for (let i = 0; i < 4; i++) {
+            for (var n = 0; n < 4; n++) {
                 loseStarfish.push({
-                    x: Math.random()*lW, y: lH*0.6+Math.random()*lH*0.3,
-                    size: 18+Math.random()*10, rot: Math.random()*0.3-0.15,
-                    phase: Math.random()*Math.PI*2
+                    x: Math.random() * lW, y: lH * 0.6 + Math.random() * lH * 0.3,
+                    size: 18 + Math.random() * 10, rot: Math.random() * 0.3 - 0.15,
+                    phase: Math.random() * Math.PI * 2
                 });
             }
         }
 
         function updateLose() {
             loseFrame++;
-            for (const g of sandGrains) {
-                g.x += g.drift; g.y += g.speed;
-                if (g.y > lH+5) { g.y = lH*0.3; g.x = Math.random()*lW; }
+            for (var i = 0; i < sandGrains.length; i++) {
+                sandGrains[i].x += sandGrains[i].drift;
+                sandGrains[i].y += sandGrains[i].speed;
+                if (sandGrains[i].y > lH + 5) {
+                    sandGrains[i].y = lH * 0.3;
+                    sandGrains[i].x = Math.random() * lW;
+                }
             }
         }
 
         function drawLose() {
-            // sky top
-            const skyG = lctx.createLinearGradient(0, 0, 0, lH*0.35);
-            skyG.addColorStop(0, '#ffab40'); skyG.addColorStop(1, '#ff8f00');
-            lctx.fillStyle = skyG; lctx.fillRect(0, 0, lW, lH*0.38);
+            var skyG = lctx.createLinearGradient(0, 0, 0, lH * 0.35);
+            skyG.addColorStop(0, '#ffab40');
+            skyG.addColorStop(1, '#ff8f00');
+            lctx.fillStyle = skyG;
+            lctx.fillRect(0, 0, lW, lH * 0.38);
 
-            // sun setting
-            const sunX = lW*0.5, sunY = lH*0.28;
-            const sg = lctx.createRadialGradient(sunX,sunY,0,sunX,sunY,55);
-            sg.addColorStop(0, 'rgba(255,236,179,1)'); sg.addColorStop(0.6, 'rgba(255,183,77,0.5)');
+            var sunX = lW * 0.5, sunY = lH * 0.28;
+            var sg = lctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 55);
+            sg.addColorStop(0, 'rgba(255,236,179,1)');
+            sg.addColorStop(0.6, 'rgba(255,183,77,0.5)');
             sg.addColorStop(1, 'rgba(255,152,0,0)');
-            lctx.fillStyle = sg; lctx.fillRect(sunX-70,sunY-70,140,140);
-            lctx.beginPath(); lctx.arc(sunX,sunY,25,0,Math.PI*2); lctx.fillStyle='#fff9c4'; lctx.fill();
+            lctx.fillStyle = sg;
+            lctx.fillRect(sunX - 70, sunY - 70, 140, 140);
+            lctx.beginPath();
+            lctx.arc(sunX, sunY, 25, 0, Math.PI * 2);
+            lctx.fillStyle = '#fff9c4';
+            lctx.fill();
 
-            // distant water
-            const waterG = lctx.createLinearGradient(0,lH*0.32,0,lH*0.42);
-            waterG.addColorStop(0,'#0288d1'); waterG.addColorStop(1,'#01579b');
-            lctx.fillStyle = waterG; lctx.fillRect(0,lH*0.32,lW,lH*0.1);
+            var waterG = lctx.createLinearGradient(0, lH * 0.32, 0, lH * 0.42);
+            waterG.addColorStop(0, '#0288d1');
+            waterG.addColorStop(1, '#01579b');
+            lctx.fillStyle = waterG;
+            lctx.fillRect(0, lH * 0.32, lW, lH * 0.1);
 
-            // waves
-            lctx.strokeStyle = 'rgba(255,255,255,0.3)'; lctx.lineWidth = 2;
-            for (const w of loseWaves2) {
+            lctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            lctx.lineWidth = 2;
+            for (var wi = 0; wi < loseWaves2.length; wi++) {
+                var w = loseWaves2[wi];
                 lctx.beginPath();
-                for (let x = 0; x <= lW; x += 4) {
-                    const y = w.y + Math.sin(x*0.01+w.phase+loseFrame*0.025)*w.amp;
-                    x===0 ? lctx.moveTo(x,y) : lctx.lineTo(x,y);
+                for (var x = 0; x <= lW; x += 4) {
+                    var y = w.y + Math.sin(x * 0.01 + w.phase + loseFrame * 0.025) * w.amp;
+                    if (x === 0) lctx.moveTo(x, y);
+                    else lctx.lineTo(x, y);
                 }
                 lctx.stroke();
             }
 
-            // sand area
-            const sandY = lH*0.4;
-            const sandG = lctx.createLinearGradient(0,sandY,0,lH);
-            sandG.addColorStop(0, '#fdd835'); sandG.addColorStop(0.3, '#f9a825');
-            sandG.addColorStop(0.7, '#f57f17'); sandG.addColorStop(1, '#e65100');
-            lctx.fillStyle = sandG; lctx.fillRect(0, sandY, lW, lH-sandY);
+            var sandY = lH * 0.4;
+            var sandG = lctx.createLinearGradient(0, sandY, 0, lH);
+            sandG.addColorStop(0, '#fdd835');
+            sandG.addColorStop(0.3, '#f9a825');
+            sandG.addColorStop(0.7, '#f57f17');
+            sandG.addColorStop(1, '#e65100');
+            lctx.fillStyle = sandG;
+            lctx.fillRect(0, sandY, lW, lH - sandY);
 
-            // sand texture lines
-            lctx.strokeStyle = 'rgba(0,0,0,0.05)'; lctx.lineWidth = 1;
-            for (let i = 0; i < 8; i++) {
-                const ly = sandY+20+i*(lH-sandY)*0.1;
+            lctx.strokeStyle = 'rgba(0,0,0,0.05)';
+            lctx.lineWidth = 1;
+            for (var ti = 0; ti < 8; ti++) {
+                var ly = sandY + 20 + ti * (lH - sandY) * 0.1;
                 lctx.beginPath();
-                for (let x = 0; x <= lW; x += 6) {
-                    const y = ly + Math.sin(x*0.015+i*1.5+loseFrame*0.008)*3;
-                    x===0 ? lctx.moveTo(x,y) : lctx.lineTo(x,y);
+                for (var tx = 0; tx <= lW; tx += 6) {
+                    var ty = ly + Math.sin(tx * 0.015 + ti * 1.5 + loseFrame * 0.008) * 3;
+                    if (tx === 0) lctx.moveTo(tx, ty);
+                    else lctx.lineTo(tx, ty);
                 }
                 lctx.stroke();
             }
 
-            // footprints
             lctx.fillStyle = 'rgba(180,130,60,0.3)';
-            for (const fp of loseFootprints) {
+            for (var fi = 0; fi < loseFootprints.length; fi++) {
+                var fp = loseFootprints[fi];
                 lctx.globalAlpha = fp.alpha;
-                // left footprint
-                lctx.beginPath();
-                lctx.ellipse(fp.x, fp.y, 6, 10, -0.2, 0, Math.PI*2); lctx.fill();
-                lctx.beginPath();
-                lctx.ellipse(fp.x-8, fp.y-5, 3, 5, 0.3, 0, Math.PI*2); lctx.fill();
-                // right footprint
-                lctx.beginPath();
-                lctx.ellipse(fp.x+20, fp.y-8, 6, 10, 0.2, 0, Math.PI*2); lctx.fill();
-                lctx.beginPath();
-                lctx.ellipse(fp.x+28, fp.y-13, 3, 5, -0.3, 0, Math.PI*2); lctx.fill();
+                lctx.beginPath(); lctx.ellipse(fp.x, fp.y, 6, 10, -0.2, 0, Math.PI * 2); lctx.fill();
+                lctx.beginPath(); lctx.ellipse(fp.x - 8, fp.y - 5, 3, 5, 0.3, 0, Math.PI * 2); lctx.fill();
+                lctx.beginPath(); lctx.ellipse(fp.x + 20, fp.y - 8, 6, 10, 0.2, 0, Math.PI * 2); lctx.fill();
+                lctx.beginPath(); lctx.ellipse(fp.x + 28, fp.y - 13, 3, 5, -0.3, 0, Math.PI * 2); lctx.fill();
             }
             lctx.globalAlpha = 1;
 
-            // sand grains falling
-            for (const g of sandGrains) {
+            for (var gi = 0; gi < sandGrains.length; gi++) {
+                var g = sandGrains[gi];
                 lctx.globalAlpha = g.alpha;
                 lctx.fillStyle = g.color;
-                lctx.beginPath(); lctx.arc(g.x, g.y, g.r, 0, Math.PI*2); lctx.fill();
+                lctx.beginPath();
+                lctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+                lctx.fill();
             }
             lctx.globalAlpha = 1;
 
-            // shells
-            lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
-            for (const s of loseShells) {
-                const sy = s.y + Math.sin(loseFrame*0.02+s.bobPhase)*2;
-                lctx.font = `${s.size}px serif`;
+            lctx.textAlign = 'center';
+            lctx.textBaseline = 'middle';
+            for (var si = 0; si < loseShells.length; si++) {
+                var s = loseShells[si];
+                var sy = s.y + Math.sin(loseFrame * 0.02 + s.bobPhase) * 2;
+                lctx.font = s.size + 'px serif';
                 lctx.fillText(s.emoji, s.x, sy);
             }
 
-            // starfish
-            for (const s of loseStarfish) {
+            for (var sti = 0; sti < loseStarfish.length; sti++) {
+                var st = loseStarfish[sti];
                 lctx.save();
-                lctx.translate(s.x, s.y);
-                lctx.rotate(s.rot + Math.sin(loseFrame*0.01+s.phase)*0.05);
-                lctx.font = `${s.size}px serif`;
+                lctx.translate(st.x, st.y);
+                lctx.rotate(st.rot + Math.sin(loseFrame * 0.01 + st.phase) * 0.05);
+                lctx.font = st.size + 'px serif';
                 lctx.fillText('⭐', 0, 0);
                 lctx.restore();
             }
 
-            // fallen Stitch & Lilo in sand
-            const cx = lW*0.5, cy = lH*0.6;
-            lctx.font = '50px serif'; lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+            var cx = lW * 0.5, cy = lH * 0.6;
+            lctx.font = '50px serif';
+            lctx.textAlign = 'center';
+            lctx.textBaseline = 'middle';
             lctx.save();
-            lctx.translate(cx-25, cy);
+            lctx.translate(cx - 25, cy);
             lctx.rotate(0.3);
             lctx.fillText('👧🏿', 0, 0);
             lctx.restore();
             lctx.save();
-            lctx.translate(cx+30, cy+5);
+            lctx.translate(cx + 30, cy + 5);
             lctx.rotate(-0.25);
             lctx.fillText('👽', 0, 0);
             lctx.restore();
 
-            // "Zzz" sleep bubbles
-            for (let i = 0; i < 3; i++) {
-                const zx = cx+40+i*15;
-                const zy = cy-30-i*18+Math.sin(loseFrame*0.04+i)*5;
-                const za = 0.6-i*0.15;
-                lctx.globalAlpha = za;
-                lctx.font = `${14+i*4}px Segoe UI, sans-serif`;
+            for (var zi = 0; zi < 3; zi++) {
+                var zx = cx + 40 + zi * 15;
+                var zy = cy - 30 - zi * 18 + Math.sin(loseFrame * 0.04 + zi) * 5;
+                lctx.globalAlpha = 0.6 - zi * 0.15;
+                lctx.font = (14 + zi * 4) + 'px Segoe UI, sans-serif';
                 lctx.fillStyle = 'white';
                 lctx.fillText('z', zx, zy);
             }
             lctx.globalAlpha = 1;
 
-            // wind particles (sand blowing)
-            lctx.strokeStyle = 'rgba(255,236,179,0.2)'; lctx.lineWidth = 1;
-            for (let i = 0; i < 6; i++) {
-                const wx = ((loseFrame*2+i*200)%(lW+200))-100;
-                const wy = lH*0.45+i*lH*0.06;
+            lctx.strokeStyle = 'rgba(255,236,179,0.2)';
+            lctx.lineWidth = 1;
+            for (var windi = 0; windi < 6; windi++) {
+                var wx = ((loseFrame * 2 + windi * 200) % (lW + 200)) - 100;
+                var wy = lH * 0.45 + windi * lH * 0.06;
                 lctx.beginPath();
                 lctx.moveTo(wx, wy);
-                lctx.lineTo(wx+30+Math.sin(loseFrame*0.03+i)*10, wy-2);
+                lctx.lineTo(wx + 30 + Math.sin(loseFrame * 0.03 + windi) * 10, wy - 2);
                 lctx.stroke();
             }
 
-            // vignette
-            const vig = lctx.createRadialGradient(lW/2,lH/2,lW*0.2,lW/2,lH/2,lW*0.8);
+            var vig = lctx.createRadialGradient(lW / 2, lH / 2, lW * 0.2, lW / 2, lH / 2, lW * 0.8);
             vig.addColorStop(0, 'rgba(0,0,0,0)');
             vig.addColorStop(1, 'rgba(0,0,0,0.4)');
-            lctx.fillStyle = vig; lctx.fillRect(0,0,lW,lH);
+            lctx.fillStyle = vig;
+            lctx.fillRect(0, 0, lW, lH);
         }
 
         function loseLoop() {
             if (!loseActive) return;
-            updateLose(); drawLose();
+            updateLose();
+            drawLose();
             requestAnimationFrame(loseLoop);
         }
 
-        const origGameOver = gameOver;
-        gameOver = function() {
-            gameRunning = false;
-            document.getElementById('finalScore').textContent = collected;
-            document.getElementById('finalTotal').textContent = totalItems;
-            document.getElementById('gameOverScreen').style.display = 'flex';
-            resizeLose(); initLoseScene(); loseLoop();
-        };
-
-        function resetGame() {
-            collected = 0; lives = 3; level = 1; totalItems = 5;
-            frame = 0; spawnTimer = 0; invincible = false;
-            particles = []; enemies = []; collectibles = []; coconuts = []; bubbles = [];
-            stitch.x = W/2; stitch.y = H/2; stitch.vx = 0; stitch.vy = 0; stitch.dir = 1;
-            lilo.x = W/2-55; lilo.y = H/2+15; lilo.vx = 0; lilo.vy = 0; lilo.dir = -1;
-            document.getElementById('total').textContent = totalItems;
-            for (let i = 0; i < totalItems; i++) spawnCollectible();
-            gameRunning = true;
+        function startLoseAnimation() {
+            resizeLose();
+            initLoseScene();
+            loseLoop();
         }
 
-        function loop() { if (gameRunning) { update(); draw(); } requestAnimationFrame(loop); }
-
-        document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('startScreen').style.display='none'; resetGame(); });
-        document.getElementById('restartBtn').addEventListener('click', () => { loseActive = false; document.getElementById('gameOverScreen').style.display='none'; resetGame(); });
-        document.getElementById('restartBtn2').addEventListener('click', () => { winActive = false; document.getElementById('winScreen').style.display='none'; resetGame(); });
-
-        // ===== WIN SCREEN OCEAN ANIMATION =====
-        const winCanvas = document.getElementById('winCanvas');
-        const wctx = winCanvas.getContext('2d');
-        let wW, wH, winFrame = 0, winActive = false;
-        let winFish = [], winBubbles = [], winWaves = [], winCorals = [], winStars = [];
+        // ===== WIN SCREEN =====
+        var winCanvas = document.getElementById('winCanvas');
+        var wctx = winCanvas.getContext('2d');
+        var wW, wH, winFrame = 0, winActive = false;
+        var winFish = [], winBubbles = [], winWaves = [], winCorals = [], winStars = [];
 
         function resizeWin() {
             wW = winCanvas.width = window.innerWidth;
@@ -707,179 +888,209 @@
         window.addEventListener('resize', resizeWin);
 
         function initWinScene() {
-            winFrame = 0; winActive = true;
-            winFish = []; winBubbles = []; winWaves = []; winCorals = []; winStars = [];
+            winFrame = 0;
+            winActive = true;
+            winFish = [];
+            winBubbles = [];
+            winWaves = [];
+            winCorals = [];
+            winStars = [];
 
-            for (let i = 0; i < 6; i++) {
+            var fishEmojis = ['🐟','🐠','🐡','🦈','🐬','🐙'];
+            for (var i = 0; i < 6; i++) {
                 winFish.push({
-                    x: Math.random()*wW, y: wH*0.3+Math.random()*wH*0.35,
-                    speed: 0.8+Math.random()*1.5, dir: Math.random()<0.5?1:-1,
-                    emoji: ['🐟','🐠','🐡','🦈','🐬','🐙'][i],
-                    size: 22+Math.random()*14, bobPhase: Math.random()*Math.PI*2
+                    x: Math.random() * wW, y: wH * 0.3 + Math.random() * wH * 0.35,
+                    speed: 0.8 + Math.random() * 1.5, dir: Math.random() < 0.5 ? 1 : -1,
+                    emoji: fishEmojis[i], size: 22 + Math.random() * 14,
+                    bobPhase: Math.random() * Math.PI * 2
                 });
             }
 
-            for (let i = 0; i < 25; i++) {
+            for (var j = 0; j < 25; j++) {
                 winBubbles.push({
-                    x: Math.random()*wW, y: wH*0.5+Math.random()*wH*0.5,
-                    r: 2+Math.random()*5, speed: 0.3+Math.random()*0.8,
-                    phase: Math.random()*Math.PI*2
+                    x: Math.random() * wW, y: wH * 0.5 + Math.random() * wH * 0.5,
+                    r: 2 + Math.random() * 5, speed: 0.3 + Math.random() * 0.8,
+                    phase: Math.random() * Math.PI * 2
                 });
             }
 
-            for (let i = 0; i < 4; i++) {
-                winWaves.push({ phase: Math.random()*Math.PI*2, speed: 0.015+Math.random()*0.01, amp: 8+Math.random()*6, y: wH*0.38+i*12 });
+            for (var k = 0; k < 4; k++) {
+                winWaves.push({
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.015 + Math.random() * 0.01,
+                    amp: 8 + Math.random() * 6,
+                    y: wH * 0.38 + k * 12
+                });
             }
 
-            const coralEmojis = ['🪸','🪸','🪸'];
-            for (let i = 0; i < 8; i++) {
-                winCorals.push({ x: Math.random()*wW, y: wH*0.82+Math.random()*wH*0.12,
-                    emoji: coralEmojis[Math.floor(Math.random()*coralEmojis.length)],
-                    size: 20+Math.random()*18 });
+            for (var m = 0; m < 8; m++) {
+                winCorals.push({
+                    x: Math.random() * wW, y: wH * 0.82 + Math.random() * wH * 0.12,
+                    emoji: '🪸', size: 20 + Math.random() * 18
+                });
             }
 
-            for (let i = 0; i < 12; i++) {
-                winStars.push({ x: Math.random()*wW, y: wH*0.75+Math.random()*wH*0.15,
-                    phase: Math.random()*Math.PI*2 });
+            for (var n = 0; n < 12; n++) {
+                winStars.push({
+                    x: Math.random() * wW, y: wH * 0.75 + Math.random() * wH * 0.15,
+                    phase: Math.random() * Math.PI * 2
+                });
             }
         }
 
         function updateWin() {
             winFrame++;
-
-            for (const f of winFish) {
-                f.x += f.speed * f.dir;
-                if (f.x > wW+50) { f.x = -40; f.y = wH*0.3+Math.random()*wH*0.35; }
-                if (f.x < -50) { f.x = wW+40; f.y = wH*0.3+Math.random()*wH*0.35; }
+            for (var i = 0; i < winFish.length; i++) {
+                winFish[i].x += winFish[i].speed * winFish[i].dir;
+                if (winFish[i].x > wW + 50) { winFish[i].x = -40; winFish[i].y = wH * 0.3 + Math.random() * wH * 0.35; }
+                if (winFish[i].x < -50) { winFish[i].x = wW + 40; winFish[i].y = wH * 0.3 + Math.random() * wH * 0.35; }
             }
-
-            for (const b of winBubbles) {
-                b.y -= b.speed;
-                b.x += Math.sin(winFrame*0.03+b.phase)*0.4;
-                if (b.y < wH*0.2) { b.y = wH*0.5+Math.random()*wH*0.5; b.x = Math.random()*wW; }
+            for (var j = 0; j < winBubbles.length; j++) {
+                winBubbles[j].y -= winBubbles[j].speed;
+                winBubbles[j].x += Math.sin(winFrame * 0.03 + winBubbles[j].phase) * 0.4;
+                if (winBubbles[j].y < wH * 0.2) {
+                    winBubbles[j].y = wH * 0.5 + Math.random() * wH * 0.5;
+                    winBubbles[j].x = Math.random() * wW;
+                }
             }
         }
 
         function drawWin() {
-            // deep ocean gradient
-            const g = wctx.createLinearGradient(0,0,0,wH);
-            g.addColorStop(0, '#0277bd'); g.addColorStop(0.25, '#01579b');
-            g.addColorStop(0.5, '#0d47a1'); g.addColorStop(0.75, '#0a2351');
+            var g = wctx.createLinearGradient(0, 0, 0, wH);
+            g.addColorStop(0, '#0277bd');
+            g.addColorStop(0.25, '#01579b');
+            g.addColorStop(0.5, '#0d47a1');
+            g.addColorStop(0.75, '#0a2351');
             g.addColorStop(1, '#061233');
-            wctx.fillStyle = g; wctx.fillRect(0,0,wW,wH);
+            wctx.fillStyle = g;
+            wctx.fillRect(0, 0, wW, wH);
 
-            // light rays from surface
-            wctx.save(); wctx.globalAlpha = 0.06;
-            for (let i = 0; i < 5; i++) {
-                const rx = wW*0.15+i*wW*0.18;
-                const grd = wctx.createLinearGradient(rx, 0, rx+40, wH*0.7);
-                grd.addColorStop(0, '#4fc3f7'); grd.addColorStop(1, 'transparent');
+            wctx.save();
+            wctx.globalAlpha = 0.06;
+            for (var ri = 0; ri < 5; ri++) {
+                var rx = wW * 0.15 + ri * wW * 0.18;
+                var grd = wctx.createLinearGradient(rx, 0, rx + 40, wH * 0.7);
+                grd.addColorStop(0, '#4fc3f7');
+                grd.addColorStop(1, 'transparent');
                 wctx.fillStyle = grd;
                 wctx.beginPath();
-                wctx.moveTo(rx, 0); wctx.lineTo(rx+80, 0);
-                wctx.lineTo(rx+120+Math.sin(winFrame*0.01+i)*20, wH*0.7);
-                wctx.lineTo(rx+60+Math.sin(winFrame*0.01+i)*20, wH*0.7);
+                wctx.moveTo(rx, 0);
+                wctx.lineTo(rx + 80, 0);
+                wctx.lineTo(rx + 120 + Math.sin(winFrame * 0.01 + ri) * 20, wH * 0.7);
+                wctx.lineTo(rx + 60 + Math.sin(winFrame * 0.01 + ri) * 20, wH * 0.7);
                 wctx.fill();
             }
             wctx.restore();
 
-            // waves at surface
-            for (const w of winWaves) {
-                wctx.strokeStyle = 'rgba(129,212,250,0.3)'; wctx.lineWidth = 2;
+            for (var wi = 0; wi < winWaves.length; wi++) {
+                var w = winWaves[wi];
+                wctx.strokeStyle = 'rgba(129,212,250,0.3)';
+                wctx.lineWidth = 2;
                 wctx.beginPath();
-                for (let x = 0; x <= wW; x += 4) {
-                    const y = w.y + Math.sin(x*0.008+w.phase+winFrame*w.speed)*w.amp;
-                    x===0 ? wctx.moveTo(x,y) : wctx.lineTo(x,y);
+                for (var x = 0; x <= wW; x += 4) {
+                    var y = w.y + Math.sin(x * 0.008 + w.phase + winFrame * w.speed) * w.amp;
+                    if (x === 0) wctx.moveTo(x, y);
+                    else wctx.lineTo(x, y);
                 }
                 wctx.stroke();
             }
 
-            // bubbles
-            for (const b of winBubbles) {
-                wctx.globalAlpha = 0.25+Math.sin(winFrame*0.05+b.phase)*0.15;
-                wctx.strokeStyle = 'rgba(179,229,252,0.7)'; wctx.lineWidth = 1;
-                wctx.beginPath(); wctx.arc(b.x, b.y, b.r, 0, Math.PI*2); wctx.stroke();
-                // highlight
+            for (var bi = 0; bi < winBubbles.length; bi++) {
+                var b = winBubbles[bi];
+                wctx.globalAlpha = 0.25 + Math.sin(winFrame * 0.05 + b.phase) * 0.15;
+                wctx.strokeStyle = 'rgba(179,229,252,0.7)';
+                wctx.lineWidth = 1;
+                wctx.beginPath();
+                wctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                wctx.stroke();
                 wctx.fillStyle = 'rgba(255,255,255,0.3)';
-                wctx.beginPath(); wctx.arc(b.x-b.r*0.3, b.y-b.r*0.3, b.r*0.25, 0, Math.PI*2); wctx.fill();
+                wctx.beginPath();
+                wctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
+                wctx.fill();
             }
             wctx.globalAlpha = 1;
 
-            // fish
-            wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
-            for (const f of winFish) {
-                const by = f.y + Math.sin(winFrame*0.04+f.bobPhase)*6;
+            wctx.textAlign = 'center';
+            wctx.textBaseline = 'middle';
+            for (var fi = 0; fi < winFish.length; fi++) {
+                var f = winFish[fi];
+                var by = f.y + Math.sin(winFrame * 0.04 + f.bobPhase) * 6;
                 wctx.save();
-                wctx.font = `${f.size}px serif`;
-                if (f.dir < 0) { wctx.translate(f.x, by); wctx.scale(-1,1); wctx.fillText(f.emoji,0,0); }
-                else { wctx.fillText(f.emoji, f.x, by); }
+                wctx.font = f.size + 'px serif';
+                if (f.dir < 0) {
+                    wctx.translate(f.x, by);
+                    wctx.scale(-1, 1);
+                    wctx.fillText(f.emoji, 0, 0);
+                } else {
+                    wctx.fillText(f.emoji, f.x, by);
+                }
                 wctx.restore();
             }
 
-            // coral & starfish
-            for (const c of winCorals) {
-                wctx.font = `${c.size}px serif`;
-                wctx.fillText(c.emoji, c.x, c.y);
+            for (var ci = 0; ci < winCorals.length; ci++) {
+                wctx.font = winCorals[ci].size + 'px serif';
+                wctx.fillText(winCorals[ci].emoji, winCorals[ci].x, winCorals[ci].y);
             }
-            for (const s of winStars) {
-                const sy = s.y + Math.sin(winFrame*0.02+s.phase)*3;
+            for (var si = 0; si < winStars.length; si++) {
+                var sy = winStars[si].y + Math.sin(winFrame * 0.02 + winStars[si].phase) * 3;
                 wctx.save();
-                wctx.shadowColor = '#ffd54f'; wctx.shadowBlur = 8;
+                wctx.shadowColor = '#ffd54f';
+                wctx.shadowBlur = 8;
                 wctx.font = '20px serif';
-                wctx.fillText('⭐', s.x, sy);
+                wctx.fillText('⭐', winStars[si].x, sy);
                 wctx.restore();
             }
 
-            // Lilo & Stitch on surfboard
-            const surfX = wW*0.5 + Math.sin(winFrame*0.015)*60;
-            const surfY = wH*0.38 + Math.sin(winFrame*0.025)*8;
-
-            // surfboard
+            var surfX = wW * 0.5 + Math.sin(winFrame * 0.015) * 60;
+            var surfY = wH * 0.38 + Math.sin(winFrame * 0.025) * 8;
             wctx.save();
             wctx.translate(surfX, surfY);
-            wctx.rotate(Math.sin(winFrame*0.02)*0.08);
+            wctx.rotate(Math.sin(winFrame * 0.02) * 0.08);
             wctx.fillStyle = '#ff6f00';
             wctx.beginPath();
-            wctx.ellipse(0, 12, 45, 8, 0, 0, Math.PI*2);
+            wctx.ellipse(0, 12, 45, 8, 0, 0, Math.PI * 2);
             wctx.fill();
             wctx.fillStyle = '#ffab00';
             wctx.beginPath();
-            wctx.ellipse(0, 12, 30, 5, 0, 0, Math.PI*2);
+            wctx.ellipse(0, 12, 30, 5, 0, 0, Math.PI * 2);
             wctx.fill();
-            // characters on surfboard
-            wctx.font = '36px serif'; wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
+            wctx.font = '36px serif';
+            wctx.textAlign = 'center';
+            wctx.textBaseline = 'middle';
             wctx.fillText('👧🏿', -18, -5);
             wctx.fillText('👽', 18, -5);
             wctx.restore();
 
-            // sparkles
-            for (let i = 0; i < 8; i++) {
-                const sx = (i*wW*0.13+winFrame*0.5)%wW;
-                const sy = wH*0.1+Math.sin(winFrame*0.03+i*2)*wH*0.35;
-                const brightness = Math.sin(winFrame*0.08+i)*0.4+0.5;
-                wctx.fillStyle = `rgba(255,255,255,${brightness})`;
-                wctx.beginPath(); wctx.arc(sx,sy,1.5,0,Math.PI*2); wctx.fill();
+            for (var spi = 0; spi < 8; spi++) {
+                var spx = (spi * wW * 0.13 + winFrame * 0.5) % wW;
+                var spy = wH * 0.1 + Math.sin(winFrame * 0.03 + spi * 2) * wH * 0.35;
+                var brightness = Math.sin(winFrame * 0.08 + spi) * 0.4 + 0.5;
+                wctx.fillStyle = 'rgba(255,255,255,' + brightness + ')';
+                wctx.beginPath();
+                wctx.arc(spx, spy, 1.5, 0, Math.PI * 2);
+                wctx.fill();
             }
         }
 
         function winLoop() {
             if (!winActive) return;
-            updateWin(); drawWin();
+            updateWin();
+            drawWin();
             requestAnimationFrame(winLoop);
         }
 
-        const origWin = winGame;
-        winGame = function() {
-            gameRunning = false;
-            document.getElementById('finalScore').textContent = collected;
-            document.getElementById('finalTotal').textContent = totalItems;
-            document.getElementById('winScreen').style.display = 'flex';
-            resizeWin(); initWinScene(); winLoop();
-        };
+        function startWinAnimation() {
+            resizeWin();
+            initWinScene();
+            winLoop();
+        }
 
-        stitch.x = W/2; stitch.y = H/2;
-        lilo.x = W/2-55; lilo.y = H/2+15;
+        stitch.x = W / 2;
+        stitch.y = H / 2;
+        lilo.x = W / 2 - 55;
+        lilo.y = H / 2 + 15;
         loop();
+    })();
     </script>
 </body>
 </html>
