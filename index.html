@@ -87,7 +87,7 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="hud">
-        <div class="hud-item">🌺 Coletáveis: <span id="score">0</span> / <span id="total">10</span></div>
+        <div class="hud-item">🌺 Coletáveis: <span id="score">0</span> / <span id="total">5</span></div>
         <div class="hud-item">❤️ Vidas: <span id="lives">3</span></div>
         <div class="hud-item">🌊 Nível: <span id="level">1</span></div>
     </div>
@@ -105,7 +105,7 @@
         <canvas id="winCanvas"></canvas>
         <div id="winContent">
             <h1 id="winTitle">Ohana!</h1>
-            <p id="winMsg">Lilo e Stitch navegando juntos! 🌊</p>
+            <p id="winMsg">Nível 500 alcançado! Lilo e Stitch navegando juntos! 🌊</p>
             <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
         </div>
     </div>
@@ -118,7 +118,7 @@
         resize();
         window.addEventListener('resize', resize);
 
-        let gameRunning = false, collected = 0, totalItems = 10, lives = 3, level = 1;
+        let gameRunning = false, collected = 0, totalItems = 5, lives = 3, level = 1;
         let frame = 0, spawnTimer = 0, invincible = false, invincibleTimer = 0;
         let particles = [], enemies = [], collectibles = [], coconuts = [], waves = [], bubbles = [];
         for (let i = 0; i < 5; i++) waves.push({ phase: Math.random()*Math.PI*2 });
@@ -151,7 +151,7 @@
         function spawnEnemy() {
             const side = Math.floor(Math.random()*4);
             let x, y, vx, vy;
-            const spd = 1.6+level*0.3;
+            const spd = 1.6+Math.sqrt(level)*0.2;
             if (side===0) { x=-30; y=Math.random()*H*0.85; vx=spd; vy=(Math.random()-0.5)*1.5; }
             else if (side===1) { x=W+30; y=Math.random()*H*0.85; vx=-spd; vy=(Math.random()-0.5)*1.5; }
             else if (side===2) { x=Math.random()*W; y=-30; vx=(Math.random()-0.5)*1.5; vy=spd; }
@@ -290,8 +290,8 @@
             if (invincible) { invincibleTimer--; if (invincibleTimer<=0) invincible = false; }
 
             spawnTimer++;
-            if (spawnTimer > Math.max(40, 90-level*4)) { spawnEnemy(); spawnTimer = 0; }
-            if (frame % 180 === 0 && coconuts.length < 3) spawnCoconut();
+            if (spawnTimer > Math.max(15, 90-level*0.15)) { spawnEnemy(); spawnTimer = 0; }
+            if (frame % Math.max(60, 180-level*0.2) === 0 && coconuts.length < Math.min(8, 3+Math.floor(level/50))) spawnCoconut();
 
             for (const c of collectibles) {
                 c.y = c.baseY + Math.sin(frame*c.bobSpeed+c.bobPhase)*c.bobAmp;
@@ -352,15 +352,13 @@
                     createParticles(c.x,c.y,'#ff80ab',20);
                     createParticles(c.x,c.y,'#ffd54f',10);
                     collectibles.splice(i,1);
-                    if (collected >= totalItems) { winGame(); return; }
+                    if (collected >= totalItems) {
+                        if (level >= 500) { winGame(); return; }
+                        level++; collected = 0; totalItems = 5;
+                        document.getElementById('total').textContent = totalItems;
+                        for (let j = 0; j < totalItems; j++) spawnCollectible();
+                    }
                 }
-            }
-
-            if (collected > 0 && collected % 5 === 0 && collectibles.length === 0) {
-                level++; totalItems += 5;
-                document.getElementById('total').textContent = totalItems;
-                for (let i = 0; i < totalItems-collected; i++) spawnCollectible();
-            }
 
             for (let i = particles.length-1; i >= 0; i--) {
                 const p = particles[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=0.95; p.vy*=0.95; p.life--;
@@ -678,7 +676,7 @@
         };
 
         function resetGame() {
-            collected = 0; lives = 3; level = 1; totalItems = 10;
+            collected = 0; lives = 3; level = 1; totalItems = 5;
             frame = 0; spawnTimer = 0; invincible = false;
             particles = []; enemies = []; collectibles = []; coconuts = []; bubbles = [];
             stitch.x = W/2; stitch.y = H/2; stitch.vx = 0; stitch.vy = 0; stitch.dir = 1;
