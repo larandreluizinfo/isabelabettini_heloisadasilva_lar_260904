@@ -108,7 +108,7 @@
         <canvas id="winCanvas"></canvas>
         <div id="winContent">
             <h1>🏠 Casa segura!</h1>
-            <p>Os 3 Porquinhos terminaram a casa de tijolos e o Lobo foi embora! 🐷🐷🐷🎉</p>
+            <p>O Lobo desceu pela chaminé, <b>queimou a bunda 🔥</b> e saiu correndo! 🐺💨<br>Os 3 Porquinhos estão a salvo! 🐷🐷🐷🎉</p>
             <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
         </div>
     </div>
@@ -569,11 +569,11 @@
 
         // ===== TELA VITÓRIA: casa de tijolos + festa =====
         var winCanvas=document.getElementById('winCanvas'), wctx=winCanvas.getContext('2d');
-        var wW,wH,winFrame=0,winActive=false,winNotes=[],winHearts=[];
+        var wW,wH,winFrame=0,winActive=false,winNotes=[],winHearts=[],winSmoke=[],winWolf=null;
         function resizeWin(){ wW=winCanvas.width=window.innerWidth; wH=winCanvas.height=window.innerHeight; }
         resizeWin(); window.addEventListener('resize',resizeWin);
         function initWinScene(){
-            winFrame=0; winActive=true; winNotes=[]; winHearts=[];
+            winFrame=0; winActive=true; winNotes=[]; winHearts=[]; winSmoke=[]; winWolf=null;
             for(var i=0;i<16;i++) winNotes.push({x:Math.random()*wW,y:Math.random()*wH*0.5,v:0.5+Math.random(),t:['🎵','🎶','⭐','🎉'][i%4]});
             for(var j=0;j<10;j++) winHearts.push({x:Math.random()*wW,y:wH*0.4+Math.random()*wH*0.5,ph:Math.random()*6.28});
         }
@@ -603,6 +603,35 @@
             for(var j=0;j<winHearts.length;j++){
                 wctx.fillText('❤️',winHearts[j].x,winHearts[j].y+Math.sin(winFrame*0.04+winHearts[j].ph)*6);
             }
+            // chaminé (por onde o lobo desceu!) com fumaça
+            wctx.fillStyle='#5d4037'; wctx.fillRect(hx+s/2-34,hy-s/2-78,22,40);
+            if(winFrame%12===0) winSmoke.push({x:hx+s/2-23,y:hy-s/2-84,vy:-1,life:50,r:5+Math.random()*4,dark:false});
+            // Lobo fugindo com a bunda queimando! 🔥🐺
+            if(!winWolf) winWolf={x:-60,dir:1};
+            winWolf.x+=3.5*winWolf.dir;
+            if(winWolf.x>wW+60) winWolf.dir=-1;
+            if(winWolf.x<-60) winWolf.dir=1;
+            var wy=wH*0.86+Math.abs(Math.sin(winFrame*0.2))*8;
+            wctx.save(); wctx.translate(winWolf.x,wy);
+            if(winWolf.dir<0) wctx.scale(-1,1);
+            wctx.font='54px serif'; wctx.fillText('🐺',0,0);
+            wctx.font='34px serif'; wctx.fillText('🔥',-36+Math.sin(winFrame*0.3)*4,-4);
+            wctx.restore();
+            if(winFrame%6===0) winSmoke.push({x:winWolf.x-winWolf.dir*42,y:wy-8,vy:-1.4,life:36,r:4+Math.random()*4,dark:true});
+            for(var si=winSmoke.length-1;si>=0;si--){
+                var sm=winSmoke[si]; sm.y+=sm.vy; sm.life--; sm.r+=0.15;
+                if(sm.life<=0){ winSmoke.splice(si,1); continue; }
+                wctx.globalAlpha=Math.min(0.6,sm.life/40);
+                wctx.fillStyle=sm.dark?'#616161':'rgba(255,255,255,0.9)';
+                wctx.beginPath(); wctx.arc(sm.x,sm.y,sm.r,0,Math.PI*2); wctx.fill();
+            }
+            wctx.globalAlpha=1;
+            wctx.font='bold 20px Segoe UI, sans-serif';
+            wctx.lineWidth=4; wctx.strokeStyle='rgba(0,0,0,0.5)'; wctx.fillStyle='#ffeb3b';
+            var msg='🔥 O Lobo queimou a bunda e saiu correndo! 🐺💨';
+            wctx.strokeText(msg,wW/2,wH*0.30); wctx.fillText(msg,wW/2,wH*0.30);
+            wctx.font='18px Segoe UI, sans-serif'; wctx.fillStyle='#fff';
+            wctx.strokeText('Ai, ai, ai!',winWolf.x,wy-48); wctx.fillText('Ai, ai, ai!',winWolf.x,wy-48);
             if(winActive) requestAnimationFrame(drawWin);
         }
         function startWinAnimation(){ resizeWin(); initWinScene(); drawWin(); }
