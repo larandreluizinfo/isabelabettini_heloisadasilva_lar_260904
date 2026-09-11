@@ -3,141 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lilo & Stitch - Aventura na Praia</title>
+    <title>Os 3 Porquinhos - Fuja do Lobo Mau!</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
         #startScreen {
             position: fixed; inset: 0;
-            background: linear-gradient(180deg, #ff7e5f 0%, #feb47b 40%, #86a8e7 70%, #0077b6 100%);
+            background: linear-gradient(180deg, #29b6f6 0%, #a5dff9 35%, #aed581 65%, #558b2f 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100;
+            z-index: 100; text-align: center; padding: 20px;
         }
-        #startScreen h1 { font-size: 3.5rem; color: white; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); margin-bottom: 5px; }
-        #startScreen h2 { font-size: 1.3rem; color: #fff3e0; margin-bottom: 30px; font-style: italic; }
-        .chars { font-size: 80px; margin-bottom: 15px; animation: bounce 2s ease-in-out infinite; }
-        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
+        #startScreen h1 { font-size: 3.2rem; color: white; text-shadow: 3px 3px 6px rgba(0,0,0,0.4); margin-bottom: 5px; }
+        #startScreen h2 { font-size: 1.3rem; color: #fffde7; margin-bottom: 12px; font-style: italic; }
+        #startScreen p { color: #fff; max-width: 520px; margin-bottom: 20px; font-size: 1rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.4); }
+        .chars { font-size: 72px; margin-bottom: 10px; animation: bounce 2s ease-in-out infinite; }
+        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
         #startBtn {
             padding: 15px 50px; font-size: 1.3rem; border: none; border-radius: 50px;
-            background: linear-gradient(135deg, #ff6f00, #ff8f00); color: white;
+            background: linear-gradient(135deg, #e53935, #b71c1c); color: white;
             font-weight: bold; cursor: pointer; transition: all 0.3s;
             text-transform: uppercase; letter-spacing: 2px;
         }
-        #startBtn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
+        #startBtn:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(229,57,53,0.6); }
         #gameCanvas { display: block; width: 100vw; height: 100vh; pointer-events: none; }
         #hud {
             position: fixed; top: 0; left: 0; right: 0;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 30px; z-index: 10; pointer-events: none;
+            padding: 15px 20px; z-index: 10; pointer-events: none; gap: 8px; flex-wrap: wrap;
         }
         .hud-item {
-            color: white; font-size: 1.15rem; font-weight: bold;
+            color: white; font-size: 1.05rem; font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            background: rgba(0,0,0,0.25); padding: 8px 16px; border-radius: 20px;
+            background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 20px;
         }
         .hud-item span { color: #ffd54f; }
-        #gameOverScreen {
+        #gameOverScreen, #winScreen {
             position: fixed; inset: 0; display: none;
             flex-direction: column; align-items: center; justify-content: center; z-index: 50;
         }
-        #loseCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-        #loseContent {
+        #loseCanvas, #winCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #loseContent, #winContent {
             position: relative; z-index: 2; text-align: center;
-            background: rgba(0,0,0,0.3); padding: 40px 60px; border-radius: 25px;
+            background: rgba(0,0,0,0.45); padding: 40px 55px; border-radius: 25px; max-width: 90vw;
         }
-        #loseContent h1 { font-size: 3rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.5); margin-bottom: 10px; }
-        #loseContent p { color: #ffe0b2; font-size: 1.5rem; margin-bottom: 30px; }
-        #loseContent .btn-main { background: linear-gradient(135deg, #ff8f00, #e65100); color: white; }
+        #loseContent h1, #winContent h1 { font-size: 2.8rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.5); margin-bottom: 10px; }
+        #loseContent p, #winContent p { color: #ffe0b2; font-size: 1.3rem; margin-bottom: 25px; }
         .btn-main {
-            padding: 15px 50px; font-size: 1.3rem; border: none; border-radius: 50px;
-            background: linear-gradient(135deg, #ff6f00, #d84315); color: white;
+            padding: 15px 50px; font-size: 1.2rem; border: none; border-radius: 50px;
+            background: linear-gradient(135deg, #43a047, #1b5e20); color: white;
             font-weight: bold; cursor: pointer; transition: all 0.3s;
             text-transform: uppercase; letter-spacing: 2px;
         }
-        .btn-main:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,111,0,0.6); }
-        #winScreen {
-            position: fixed; inset: 0; display: none;
-            flex-direction: column; align-items: center; justify-content: center; z-index: 55;
-        }
-        #winCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-        #winContent {
-            position: relative; z-index: 2; text-align: center;
-            background: rgba(0,0,0,0.35); padding: 40px 60px; border-radius: 25px;
-        }
-        #winContent h1 { font-size: 3.5rem; color: #fff; text-shadow: 3px 3px 8px rgba(0,0,0,0.6); margin-bottom: 8px; }
-        #winContent p { color: #e0f7fa; font-size: 1.4rem; margin-bottom: 25px; }
-        #winContent .btn-main { background: linear-gradient(135deg, #00bcd4, #0097a7); color: white; }
+        .btn-main:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
     <div id="startScreen">
-        <div class="chars">👧🏿 👽</div>
-        <h1>Lilo & Stitch</h1>
-        <h2>Aventura na Praia!</h2>
-        <button id="startBtn">Jogar</button>
+        <div class="chars">🐷🐷🐷🐺</div>
+        <h1>Os 3 Porquinhos</h1>
+        <h2>Fuja do Lobo Mau!</h2>
+        <p>Ajude <b>Cícero, Heitor e Prático</b> a recolher <b>palha 🌾, madeira 🪵 e tijolos 🧱</b> para construir as casinhas.<br>
+        Desvie do <b>Lobo Mau 🐺</b> e do sopro <b>🌪️</b>! Use setas / WASD ou o mouse.</p>
+        <button id="startBtn">Começar</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <div id="hud">
-        <div class="hud-item">🌺 Coletáveis: <span id="score">0</span> / <span id="total">5</span></div>
+        <div class="hud-item">🧱 Materiais: <span id="score">0</span> / <span id="total">6</span></div>
         <div class="hud-item">❤️ Vidas: <span id="lives">3</span></div>
-        <div class="hud-item">🌊 Nível: <span id="level">1</span></div>
+        <div class="hud-item">🏠 Casinha: <span id="level">1</span> / 8</div>
     </div>
 
     <div id="gameOverScreen">
         <canvas id="loseCanvas"></canvas>
         <div id="loseContent">
-            <h1>Fim de Jogo!</h1>
-            <p>Nível: <span id="finalLevel">1</span> | Coletáveis: <span id="finalScore">0</span></p>
-            <button id="restartBtn" class="btn-main">Jogar Novamente</button>
+            <h1>🐺 O Lobo pegou vocês!</h1>
+            <p>Casinha: <span id="finalLevel">1</span> | Materiais: <span id="finalScore">0</span></p>
+            <button id="restartBtn" class="btn-main">Tentar de Novo</button>
         </div>
     </div>
 
     <div id="winScreen">
         <canvas id="winCanvas"></canvas>
         <div id="winContent">
-            <h1>Ohana!</h1>
-            <p>Nível 500 alcançado! Lilo e Stitch navegando juntos! 🌊</p>
+            <h1>🏠 Casa segura!</h1>
+            <p>Os 3 Porquinhos terminaram a casa de tijolos e o Lobo foi embora! 🐷🐷🐷🎉</p>
             <button id="restartBtn2" class="btn-main">Jogar Novamente</button>
         </div>
     </div>
 
     <script>
     (function() {
+        var WIN_LEVEL = 8;
         var canvas = document.getElementById('gameCanvas');
         var ctx = canvas.getContext('2d');
         var W, H;
-
-        function resize() {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
-        }
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
         resize();
         window.addEventListener('resize', resize);
 
         var gameRunning = false;
-        var collected = 0;
-        var totalItems = 5;
-        var lives = 3;
-        var level = 1;
-        var frame = 0;
-        var spawnTimer = 0;
-        var invincible = false;
-        var invincibleTimer = 0;
-        var particles = [];
-        var enemies = [];
-        var collectibles = [];
-        var coconuts = [];
-        var waves = [];
-        var bubbles = [];
+        var collected = 0, totalItems = 6, lives = 3, level = 1;
+        var frame = 0, spawnTimer = 0, invincible = false, invincibleTimer = 0;
+        var particles = [], enemies = [], collectibles = [], gusts = [], clouds = [], flowers = [];
 
-        for (var i = 0; i < 5; i++) {
-            waves.push({ phase: Math.random() * Math.PI * 2 });
-        }
+        for (var i = 0; i < 5; i++) clouds.push({ x: Math.random(), y: 0.06 + Math.random() * 0.18, s: 0.6 + Math.random() * 0.9, v: 0.0002 + Math.random() * 0.0004 });
+        for (var f = 0; f < 24; f++) flowers.push({ x: Math.random(), y: 0.68 + Math.random() * 0.28, type: ['🌼','🌻','🌷','🌸'][f % 4], ph: Math.random() * 6.28 });
 
-        var stitch = { x: W / 2, y: H / 2, w: 44, h: 44, vx: 0, vy: 0, speed: 5.5, dir: 1 };
-        var lilo = { x: W / 2 - 55, y: H / 2 + 15, w: 42, h: 42, vx: 0, vy: 0, targetX: 0, targetY: 0, bobPhase: 0, dir: -1 };
+        var pig = { x: W/2, y: H/2, w: 46, h: 46, vx: 0, vy: 0, speed: 5.5, dir: 1, name: 'Prático', emoji: '🐷' };
+        var pals = [
+            { x: W/2-55, y: H/2+15, w: 40, h: 40, dir: -1, name: 'Heitor', emoji: '🐽', offX: -55, offY: 18 },
+            { x: W/2-95, y: H/2+30, w: 36, h: 36, dir: -1, name: 'Cícero', emoji: '🐷', offX: -95, offY: 34 }
+        ];
 
         var keys = {};
         document.addEventListener('keydown', function(e) { keys[e.key] = true; });
@@ -147,951 +125,369 @@
         canvas.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
         canvas.addEventListener('mousedown', function() { mouseDown = true; });
         canvas.addEventListener('mouseup', function() { mouseDown = false; });
-        canvas.addEventListener('touchstart', function(e) {
-            mouseX = e.touches[0].clientX;
-            mouseY = e.touches[0].clientY;
-            mouseDown = true;
-        });
-        canvas.addEventListener('touchmove', function(e) {
-            e.preventDefault();
-            mouseX = e.touches[0].clientX;
-            mouseY = e.touches[0].clientY;
-        });
+        canvas.addEventListener('touchstart', function(e) { mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; mouseDown = true; });
+        canvas.addEventListener('touchmove', function(e) { e.preventDefault(); mouseX = e.touches[0].clientX; mouseY = e.touches[0].clientY; });
         canvas.addEventListener('touchend', function() { mouseDown = false; });
 
+        var MATS = ['🌾','🪵','🧱','🌾','🪵','🧱','🍎','🌻','⭐','🏠'];
         function spawnCollectible() {
-            var items = ['🌺','🌸','🍹','🐚','⭐','🎵','🏄','🍉','🎸','🍍'];
-            collectibles.push({
-                x: Math.random() * (W - 80) + 40,
-                y: Math.random() * (H * 0.45) + H * 0.18,
-                w: 30, h: 30,
-                type: items[Math.floor(Math.random() * items.length)],
-                bobPhase: Math.random() * Math.PI * 2,
-                bobSpeed: 0.03 + Math.random() * 0.03,
-                bobAmp: 4 + Math.random() * 4,
-                baseY: 0,
-                glow: Math.random() * Math.PI * 2
-            });
-            collectibles[collectibles.length - 1].baseY = collectibles[collectibles.length - 1].y;
+            var c = { x: Math.random()*(W-80)+40, y: Math.random()*(H*0.5)+H*0.2, w: 30, h: 30,
+                type: MATS[Math.floor(Math.random()*MATS.length)],
+                bobPhase: Math.random()*6.28, bobSpeed: 0.03+Math.random()*0.03, bobAmp: 4+Math.random()*4, glow: Math.random()*6.28 };
+            c.baseY = c.y;
+            collectibles.push(c);
         }
-
         function spawnEnemy() {
-            var side = Math.floor(Math.random() * 4);
-            var x, y, vx, vy;
-            var spd = 1.6 + Math.sqrt(level) * 0.2;
-            if (side === 0) { x = -30; y = Math.random() * H * 0.85; vx = spd; vy = (Math.random() - 0.5) * 1.5; }
-            else if (side === 1) { x = W + 30; y = Math.random() * H * 0.85; vx = -spd; vy = (Math.random() - 0.5) * 1.5; }
-            else if (side === 2) { x = Math.random() * W; y = -30; vx = (Math.random() - 0.5) * 1.5; vy = spd; }
-            else { x = Math.random() * W; y = H + 30; vx = (Math.random() - 0.5) * 1.5; vy = -spd; }
-            var types = ['🦀','🐙','🦞','🐡'];
-            enemies.push({
-                x: x, y: y, vx: vx, vy: vy,
-                w: 28 + Math.random() * 10, h: 28 + Math.random() * 10,
-                type: types[Math.floor(Math.random() * types.length)], rot: 0
-            });
+            var side = Math.floor(Math.random()*4), x, y, vx, vy;
+            var spd = 1.7 + Math.sqrt(level) * 0.35;
+            if (side===0){ x=-30; y=Math.random()*H*0.85; vx=spd; vy=(Math.random()-0.5)*1.5; }
+            else if (side===1){ x=W+30; y=Math.random()*H*0.85; vx=-spd; vy=(Math.random()-0.5)*1.5; }
+            else if (side===2){ x=Math.random()*W; y=-30; vx=(Math.random()-0.5)*1.5; vy=spd; }
+            else { x=Math.random()*W; y=H+30; vx=(Math.random()-0.5)*1.5; vy=-spd; }
+            enemies.push({ x:x, y:y, vx:vx, vy:vy, w:34+Math.random()*10, h:34+Math.random()*10, type:'🐺', rot:0 });
+        }
+        function spawnGust() {
+            var px = Math.random()<0.5 ? W*0.06 : W*0.94;
+            gusts.push({ x:px, y:H*0.2, vx:(Math.random()-0.5)*3, vy:2.4+Math.random(), w:22, h:22, type: Math.random()<0.5?'🌪️':'💨', rot:0 });
+        }
+        function createParticles(px,py,color,count){
+            for (var i=0;i<count;i++) particles.push({ x:px, y:py, vx:(Math.random()-0.5)*8, vy:(Math.random()-0.5)*8, life:25+Math.random()*15, maxLife:40, color:color, size:2+Math.random()*3 });
+        }
+        function hitPigs(px,py){
+            if (invincible) return;
+            lives--;
+            createParticles(px,py,'#ff5252',15);
+            invincible = true; invincibleTimer = 80;
+            if (lives<=0) gameOver();
         }
 
-        function spawnCoconut() {
-            var px = Math.random() < 0.5 ? W * 0.08 : W * 0.92;
-            coconuts.push({ x: px, y: H * 0.28, vx: (Math.random() - 0.5) * 3, vy: 2.2 + Math.random(), w: 18, h: 18 });
-        }
-
-        function spawnBubble(bx, by) {
-            bubbles.push({ x: bx + (Math.random() - 0.5) * 20, y: by, vy: -1 - Math.random() * 2, life: 40 + Math.random() * 20, r: 2 + Math.random() * 3 });
-        }
-
-        function createParticles(px, py, color, count) {
-            for (var i = 0; i < count; i++) {
-                particles.push({
-                    x: px, y: py,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: (Math.random() - 0.5) * 8,
-                    life: 25 + Math.random() * 15,
-                    maxLife: 40,
-                    color: color,
-                    size: 2 + Math.random() * 3
-                });
-            }
-        }
-
-        function drawBeach() {
-            var sky = ctx.createLinearGradient(0, 0, 0, H * 0.45);
-            sky.addColorStop(0, '#ff7043');
-            sky.addColorStop(0.4, '#ffb74d');
-            sky.addColorStop(1, '#81d4fa');
-            ctx.fillStyle = sky;
-            ctx.fillRect(0, 0, W, H * 0.5);
-
-            var sunX = W * 0.8, sunY = H * 0.18;
-            var sg = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
-            sg.addColorStop(0, 'rgba(255,241,118,1)');
-            sg.addColorStop(0.5, 'rgba(255,183,77,0.6)');
-            sg.addColorStop(1, 'rgba(255,183,77,0)');
-            ctx.fillStyle = sg;
-            ctx.fillRect(sunX - 80, sunY - 80, 160, 160);
+        function drawHouse(hx, hy, s, kind) {
+            // kind: palha / madeira / tijolo
+            var wall = kind==='palha' ? '#f9a825' : kind==='madeira' ? '#8d6e63' : '#d32f2f';
+            var roof = kind==='palha' ? '#ffca28' : kind==='madeira' ? '#5d4037' : '#7b1fa2';
+            ctx.fillStyle = wall;
+            ctx.fillRect(hx-s/2, hy-s/2, s, s);
+            ctx.fillStyle = roof;
             ctx.beginPath();
-            ctx.arc(sunX, sunY, 30, 0, Math.PI * 2);
+            ctx.moveTo(hx-s/2-8, hy-s/2); ctx.lineTo(hx, hy-s/2-26); ctx.lineTo(hx+s/2+8, hy-s/2);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#4e342e';
+            ctx.fillRect(hx-9, hy+s/2-24, 18, 24);
             ctx.fillStyle = '#fff9c4';
-            ctx.fill();
-
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            for (var i = 0; i < 4; i++) {
-                var cx = ((i * W * 0.3 + frame * 0.3) % (W + 200)) - 100;
-                var cy = H * 0.12 + i * 18;
-                ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx + 18, cy + 8, 17, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx - 13, cy + 10, 15, 0, Math.PI * 2); ctx.fill();
-            }
-
-            var waterY = H * 0.45;
-            var wg = ctx.createLinearGradient(0, waterY, 0, H * 0.65);
-            wg.addColorStop(0, '#0288d1');
-            wg.addColorStop(1, '#01579b');
-            ctx.fillStyle = wg;
-            ctx.fillRect(0, waterY, W, H * 0.2);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            ctx.lineWidth = 2;
-            for (var wi = 0; wi < waves.length; wi++) {
-                ctx.beginPath();
-                for (var x = 0; x <= W; x += 5) {
-                    var y = waterY + Math.sin(x * 0.01 + waves[wi].phase + frame * 0.03) * 6 + 15;
-                    if (x === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                waves[wi].phase += 0.005;
-            }
-
-            var sandY = H * 0.62;
-            var sand = ctx.createLinearGradient(0, sandY, 0, H);
-            sand.addColorStop(0, '#fdd835');
-            sand.addColorStop(0.4, '#f9a825');
-            sand.addColorStop(1, '#e65100');
-            ctx.fillStyle = sand;
-            ctx.fillRect(0, sandY, W, H - sandY);
-
-            for (var si = 0; si < 15; si++) {
-                var sx = (si * 173 + frame * 0.15) % W;
-                var sy = sandY + 10 + (si * 67) % (H * 0.35);
-                ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + Math.sin(frame * 0.06 + si) * 0.2) + ')';
-                ctx.fillRect(sx, sy, 2, 2);
-            }
-
-            drawPalm(W * 0.08, H * 0.58);
-            drawPalm(W * 0.92, H * 0.56);
-            if (level > 1) drawPalm(W * 0.5, H * 0.54);
+            ctx.fillRect(hx-s/2+8, hy-8, 14, 14);
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.font = 'bold 11px Segoe UI, sans-serif'; ctx.textAlign='center';
+            ctx.fillText(kind==='palha'?'🌾':kind==='madeira'?'🪵':'🧱', hx, hy+s/2+14);
         }
 
-        function drawPalm(px, baseY) {
-            ctx.fillStyle = '#5d4037';
-            ctx.beginPath();
-            ctx.moveTo(px - 6, baseY); ctx.lineTo(px + 6, baseY);
-            ctx.lineTo(px + 4, baseY - 90); ctx.lineTo(px - 4, baseY - 90);
-            ctx.fill();
-            var topY = baseY - 90;
-            ctx.fillStyle = '#2e7d32';
-            for (var a = 0; a < 6; a++) {
-                var angle = (a / 6) * Math.PI * 2 + Math.sin(frame * 0.02 + a) * 0.1;
-                ctx.beginPath();
-                ctx.moveTo(px, topY);
-                var ex = px + Math.cos(angle) * 50;
-                var ey = topY + Math.sin(angle) * 20 - 10;
-                ctx.quadraticCurveTo(px + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 - 20, ex, ey);
-                ctx.quadraticCurveTo(px + Math.cos(angle) * 25, topY + Math.sin(angle) * 5 + 5, px, topY);
-                ctx.fill();
+        function drawField() {
+            var sky = ctx.createLinearGradient(0,0,0,H*0.5);
+            sky.addColorStop(0,'#0288d1'); sky.addColorStop(0.6,'#81d4fa'); sky.addColorStop(1,'#e1f5fe');
+            ctx.fillStyle = sky; ctx.fillRect(0,0,W,H*0.5);
+            // sol
+            var sunX=W*0.85, sunY=H*0.14;
+            var sg=ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,70);
+            sg.addColorStop(0,'rgba(255,241,118,1)'); sg.addColorStop(0.5,'rgba(255,183,77,0.6)'); sg.addColorStop(1,'rgba(255,183,77,0)');
+            ctx.fillStyle=sg; ctx.fillRect(sunX-90,sunY-90,180,180);
+            ctx.beginPath(); ctx.arc(sunX,sunY,30,0,Math.PI*2); ctx.fillStyle='#fff9c4'; ctx.fill();
+            // nuvens
+            ctx.fillStyle='rgba(255,255,255,0.85)';
+            for (var i=0;i<clouds.length;i++){
+                var c=clouds[i]; c.x+=c.v; if(c.x>1.2) c.x=-0.2;
+                var cx=c.x*W, cy=c.y*H, s=c.s;
+                ctx.beginPath(); ctx.arc(cx,cy,22*s,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx+20*s,cy+7*s,17*s,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx-18*s,cy+8*s,15*s,0,Math.PI*2); ctx.fill();
             }
+            // colinas
+            ctx.fillStyle='#7cb342';
+            ctx.beginPath(); ctx.ellipse(W*0.2,H*0.52,W*0.35,H*0.12,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#8bc34a';
+            ctx.beginPath(); ctx.ellipse(W*0.8,H*0.53,W*0.4,H*0.13,0,0,Math.PI*2); ctx.fill();
+            // grama
+            var gr=ctx.createLinearGradient(0,H*0.55,0,H);
+            gr.addColorStop(0,'#9ccc65'); gr.addColorStop(1,'#33691e');
+            ctx.fillStyle=gr; ctx.fillRect(0,H*0.55,W,H*0.45);
+            // flores
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            for (var fi=0;fi<flowers.length;fi++){
+                var fl=flowers[fi];
+                ctx.font='16px serif';
+                ctx.fillText(fl.type, fl.x*W, fl.y*H + Math.sin(frame*0.03+fl.ph)*2);
+            }
+            // cercas
+            ctx.strokeStyle='#6d4c41'; ctx.lineWidth=4;
+            var fy=H*0.62;
+            ctx.beginPath(); ctx.moveTo(0,fy); ctx.lineTo(W,fy); ctx.stroke();
+            ctx.lineWidth=3;
+            for (var fx=20;fx<W;fx+=70){
+                ctx.beginPath(); ctx.moveTo(fx,fy-12); ctx.lineTo(fx,fy+12); ctx.stroke();
+            }
+            // casinhas no fundo (decorativas, crescem com o nível)
+            var hs = 46;
+            drawHouse(W*0.15, H*0.5, hs, 'palha');
+            if (level>=2) drawHouse(W*0.5, H*0.48, hs+6, 'madeira');
+            if (level>=4) drawHouse(W*0.85, H*0.5, hs+12, 'tijolo');
+            // árvores
+            drawTree(W*0.06,H*0.6); drawTree(W*0.94,H*0.6);
         }
-
-        function drawCharacter(emoji, ex, ey, size, dir, isInv) {
+        function drawTree(px,baseY){
+            ctx.fillStyle='#5d4037'; ctx.fillRect(px-5,baseY-60,10,60);
+            ctx.fillStyle='#2e7d32';
+            ctx.beginPath(); ctx.arc(px,baseY-75,26,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#388e3c';
+            ctx.beginPath(); ctx.arc(px-12,baseY-65,16,0,Math.PI*2); ctx.fill();
+            ctx.font='18px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('🍎',px+10+Math.sin(frame*0.03)*2,baseY-70);
+        }
+        function drawPig(emoji,ex,ey,size,dir,isInv){
             ctx.save();
-            if (isInv && Math.floor(frame / 4) % 2 === 0) ctx.globalAlpha = 0.35;
-            ctx.font = size + 'px serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            if (dir < 0) {
-                ctx.translate(ex, ey);
-                ctx.scale(-1, 1);
-                ctx.fillText(emoji, 0, 0);
-            } else {
-                ctx.fillText(emoji, ex, ey);
-            }
+            if (isInv && Math.floor(frame/4)%2===0) ctx.globalAlpha=0.35;
+            ctx.font=size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            if (dir<0){ ctx.translate(ex,ey); ctx.scale(-1,1); ctx.fillText(emoji,0,0); }
+            else ctx.fillText(emoji,ex,ey);
             ctx.restore();
         }
 
         function update() {
             frame++;
-
-            stitch.vx = 0;
-            stitch.vy = 0;
-            if (keys['ArrowLeft'] || keys['a']) { stitch.vx = -stitch.speed; stitch.dir = -1; }
-            if (keys['ArrowRight'] || keys['d']) { stitch.vx = stitch.speed; stitch.dir = 1; }
-            if (keys['ArrowUp'] || keys['w']) stitch.vy = -stitch.speed;
-            if (keys['ArrowDown'] || keys['s']) stitch.vy = stitch.speed;
-
-            if (mouseDown) {
-                var dx = mouseX - stitch.x;
-                var dy = mouseY - stitch.y;
-                var dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 5) {
-                    stitch.vx = (dx / dist) * stitch.speed;
-                    stitch.vy = (dy / dist) * stitch.speed;
-                    stitch.dir = dx > 0 ? 1 : -1;
-                }
+            pig.vx=0; pig.vy=0;
+            if (keys['ArrowLeft']||keys['a']){ pig.vx=-pig.speed; pig.dir=-1; }
+            if (keys['ArrowRight']||keys['d']){ pig.vx=pig.speed; pig.dir=1; }
+            if (keys['ArrowUp']||keys['w']) pig.vy=-pig.speed;
+            if (keys['ArrowDown']||keys['s']) pig.vy=pig.speed;
+            if (mouseDown){
+                var dx=mouseX-pig.x, dy=mouseY-pig.y, dist=Math.sqrt(dx*dx+dy*dy);
+                if (dist>5){ pig.vx=(dx/dist)*pig.speed; pig.vy=(dy/dist)*pig.speed; pig.dir=dx>0?1:-1; }
             }
-
-            stitch.x += stitch.vx;
-            stitch.y += stitch.vy;
-            stitch.x = Math.max(stitch.w / 2, Math.min(W - stitch.w / 2, stitch.x));
-            stitch.y = Math.max(stitch.h / 2, Math.min(H - stitch.h / 2, stitch.y));
-
-            lilo.targetX = stitch.x - 55 * stitch.dir;
-            lilo.targetY = stitch.y + 15 + Math.sin(frame * 0.06) * 4;
-            var ldx = lilo.targetX - lilo.x;
-            var ldy = lilo.targetY - lilo.y;
-            lilo.x += ldx * 0.08;
-            lilo.y += ldy * 0.08;
-            if (ldx < -1) lilo.dir = -1;
-            else if (ldx > 1) lilo.dir = 1;
-
-            if (invincible) {
-                invincibleTimer--;
-                if (invincibleTimer <= 0) invincible = false;
+            pig.x=Math.max(24,Math.min(W-24,pig.x+pig.vx));
+            pig.y=Math.max(24,Math.min(H-24,pig.y+pig.vy));
+            for (var pi=0;pi<pals.length;pi++){
+                var p=pals[pi];
+                var tx=pig.x+p.offX*pig.dir, ty=pig.y+p.offY+Math.sin(frame*0.06+pi*2)*4;
+                p.x+=(tx-p.x)*0.08; p.y+=(ty-p.y)*0.08;
+                var ldx=tx-p.x;
+                if (ldx<-1) p.dir=-1; else if (ldx>1) p.dir=1; else p.dir=pig.dir;
             }
+            if (invincible){ invincibleTimer--; if(invincibleTimer<=0) invincible=false; }
 
             spawnTimer++;
-            var spawnLimit = Math.max(15, 90 - level * 0.15);
-            if (spawnTimer > spawnLimit) {
-                spawnEnemy();
-                spawnTimer = 0;
-            }
+            var spawnLimit=Math.max(18,90-level*4);
+            if (spawnTimer>spawnLimit){ spawnEnemy(); spawnTimer=0; }
+            if (frame%Math.max(70,170-level*8)===0 && gusts.length<3+Math.floor(level/3)) spawnGust();
 
-            var coconutInterval = Math.max(60, 180 - level * 0.2);
-            if (frame % Math.floor(coconutInterval) === 0 && coconuts.length < Math.min(8, 3 + Math.floor(level / 50))) {
-                spawnCoconut();
+            for (var ci=0;ci<collectibles.length;ci++){
+                var cc=collectibles[ci];
+                cc.y=cc.baseY+Math.sin(frame*cc.bobSpeed+cc.bobPhase)*cc.bobAmp;
+                cc.glow+=0.05;
             }
-
-            for (var ci = 0; ci < collectibles.length; ci++) {
-                var cc = collectibles[ci];
-                cc.y = cc.baseY + Math.sin(frame * cc.bobSpeed + cc.bobPhase) * cc.bobAmp;
-                cc.glow += 0.05;
-            }
-
-            if (frame % 10 === 0) {
-                spawnBubble(Math.random() * W, H * 0.5 + Math.random() * H * 0.12);
-            }
-
-            for (var ei = enemies.length - 1; ei >= 0; ei--) {
-                var e = enemies[ei];
-                e.x += e.vx;
-                e.y += e.vy;
-                e.rot += 0.05;
-                if (e.x < -50 || e.x > W + 50 || e.y < -50 || e.y > H + 50) {
-                    enemies.splice(ei, 1);
-                    continue;
+            for (var ei=enemies.length-1;ei>=0;ei--){
+                var e=enemies[ei]; e.x+=e.vx; e.y+=e.vy; e.rot+=0.03;
+                if (e.x<-60||e.x>W+60||e.y<-60||e.y>H+60){ enemies.splice(ei,1); continue; }
+                var all=[pig].concat(pals);
+                var hit=false;
+                for (var h=0;h<all.length;h++){
+                    var a=all[h];
+                    if (Math.hypot(a.x-e.x,a.y-e.y)<a.w/2+e.w/2){ hitPigs(a.x,a.y); hit=true; break; }
                 }
-
-                var dxs = stitch.x - e.x;
-                var dys = stitch.y - e.y;
-                if (Math.sqrt(dxs * dxs + dys * dys) < stitch.w / 2 + e.w / 2) {
-                    if (!invincible) {
-                        lives--;
-                        createParticles(stitch.x, stitch.y, '#ff5252', 15);
-                        invincible = true;
-                        invincibleTimer = 80;
-                        if (lives <= 0) { gameOver(); return; }
-                    }
-                    createParticles(e.x, e.y, '#ffb74d', 10);
-                    enemies.splice(ei, 1);
-                    continue;
-                }
-
-                var dxl = lilo.x - e.x;
-                var dyl = lilo.y - e.y;
-                if (Math.sqrt(dxl * dxl + dyl * dyl) < lilo.w / 2 + e.w / 2) {
-                    if (!invincible) {
-                        lives--;
-                        createParticles(lilo.x, lilo.y, '#ff5252', 15);
-                        invincible = true;
-                        invincibleTimer = 80;
-                        if (lives <= 0) { gameOver(); return; }
-                    }
-                    createParticles(e.x, e.y, '#ffb74d', 10);
-                    enemies.splice(ei, 1);
+                if (hit){ createParticles(e.x,e.y,'#9e9e9e',10); enemies.splice(ei,1); }
+            }
+            for (var gi=gusts.length-1;gi>=0;gi--){
+                var g=gusts[gi]; g.x+=g.vx; g.y+=g.vy; g.rot+=0.1;
+                if (g.y>H+30||g.x<-30||g.x>W+30){ gusts.splice(gi,1); continue; }
+                if (Math.hypot(pig.x-g.x,pig.y-g.y)<pig.w/2+g.w/2){
+                    if(!invincible){ lives--; createParticles(pig.x,pig.y,'#b0bec5',12); invincible=true; invincibleTimer=60; if(lives<=0){ gameOver(); return; } }
+                    gusts.splice(gi,1);
                 }
             }
-
-            for (var coi = coconuts.length - 1; coi >= 0; coi--) {
-                var co = coconuts[coi];
-                co.x += co.vx;
-                co.y += co.vy;
-                if (co.y > H + 20 || co.x < -20 || co.x > W + 20) {
-                    coconuts.splice(coi, 1);
-                    continue;
+            for (var li=collectibles.length-1;li>=0;li--){
+                var col=collectibles[li];
+                var got=false;
+                var team=[pig].concat(pals);
+                for (var t=0;t<team.length;t++){
+                    if (Math.hypot(team[t].x-col.x,team[t].y-col.y)<team[t].w/2+col.w/2){ got=true; break; }
                 }
-                var dcx = stitch.x - co.x;
-                var dcy = stitch.y - co.y;
-                if (Math.sqrt(dcx * dcx + dcy * dcy) < stitch.w / 2 + co.w / 2) {
-                    if (!invincible) {
-                        lives--;
-                        createParticles(stitch.x, stitch.y, '#8d6e63', 12);
-                        invincible = true;
-                        invincibleTimer = 60;
-                        if (lives <= 0) { gameOver(); return; }
-                    }
-                    coconuts.splice(coi, 1);
-                }
-            }
-
-            for (var coli = collectibles.length - 1; coli >= 0; coli--) {
-                var col = collectibles[coli];
-                var ds = Math.sqrt((stitch.x - col.x) * (stitch.x - col.x) + (stitch.y - col.y) * (stitch.y - col.y));
-                var dl = Math.sqrt((lilo.x - col.x) * (lilo.x - col.x) + (lilo.y - col.y) * (lilo.y - col.y));
-                if (ds < stitch.w / 2 + col.w / 2 || dl < lilo.w / 2 + col.w / 2) {
+                if (got){
                     collected++;
-                    createParticles(col.x, col.y, '#ff80ab', 20);
-                    createParticles(col.x, col.y, '#ffd54f', 10);
-                    collectibles.splice(coli, 1);
-                    if (collected >= totalItems) {
-                        if (level >= 500) {
-                            winGame();
-                            return;
-                        }
+                    createParticles(col.x,col.y,'#ffd54f',16);
+                    createParticles(col.x,col.y,'#8bc34a',10);
+                    collectibles.splice(li,1);
+                    if (collected>=totalItems){
+                        if (level>=WIN_LEVEL){ winGame(); return; }
                         level++;
-                        collected = 0;
-                        totalItems = 5;
-                        document.getElementById('total').textContent = totalItems;
-                        for (var n = 0; n < totalItems; n++) spawnCollectible();
+                        collected=0;
+                        document.getElementById('total').textContent=totalItems;
+                        for (var n=0;n<totalItems;n++) spawnCollectible();
                     }
                 }
             }
-
-            for (var pi = particles.length - 1; pi >= 0; pi--) {
-                var p = particles[pi];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vx *= 0.95;
-                p.vy *= 0.95;
-                p.life--;
-                if (p.life <= 0) particles.splice(pi, 1);
+            for (var k=particles.length-1;k>=0;k--){
+                var pt=particles[k]; pt.x+=pt.vx; pt.y+=pt.vy; pt.vx*=0.95; pt.vy*=0.95; pt.life--;
+                if(pt.life<=0) particles.splice(k,1);
             }
-
-            for (var bi = bubbles.length - 1; bi >= 0; bi--) {
-                var b = bubbles[bi];
-                b.y += b.vy;
-                b.x += Math.sin(frame * 0.1 + bi) * 0.3;
-                b.life--;
-                if (b.life <= 0) bubbles.splice(bi, 1);
-            }
-
-            document.getElementById('score').textContent = collected;
-            document.getElementById('lives').textContent = lives;
-            document.getElementById('level').textContent = level;
+            document.getElementById('score').textContent=collected;
+            document.getElementById('lives').textContent=lives;
+            document.getElementById('level').textContent=level;
         }
 
         function draw() {
-            ctx.clearRect(0, 0, W, H);
-            drawBeach();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            for (var bi = 0; bi < bubbles.length; bi++) {
-                var b = bubbles[bi];
-                var a = b.life / 60;
-                ctx.globalAlpha = a * 0.5;
-                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-
-            for (var ci = 0; ci < collectibles.length; ci++) {
-                var c = collectibles[ci];
+            ctx.clearRect(0,0,W,H);
+            drawField();
+            ctx.textAlign='center'; ctx.textBaseline='middle';
+            for (var ci=0;ci<collectibles.length;ci++){
+                var c=collectibles[ci];
                 ctx.save();
-                ctx.shadowColor = '#ffd54f';
-                ctx.shadowBlur = 12 + Math.sin(c.glow) * 6;
-                ctx.font = '28px serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(c.type, c.x, c.y);
+                ctx.shadowColor='#ffd54f'; ctx.shadowBlur=12+Math.sin(c.glow)*6;
+                ctx.font='28px serif'; ctx.fillText(c.type,c.x,c.y);
                 ctx.restore();
             }
-
-            ctx.font = '22px serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            for (var coi = 0; coi < coconuts.length; coi++) {
-                ctx.fillText('🥥', coconuts[coi].x, coconuts[coi].y);
+            ctx.font='24px serif';
+            for (var gi=0;gi<gusts.length;gi++){
+                ctx.save(); ctx.translate(gusts[gi].x,gusts[gi].y); ctx.rotate(gusts[gi].rot);
+                ctx.fillText(gusts[gi].type,0,0); ctx.restore();
             }
-
-            for (var ei = 0; ei < enemies.length; ei++) {
-                var e = enemies[ei];
-                ctx.save();
-                ctx.font = e.w + 'px serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.translate(e.x, e.y);
-                ctx.rotate(e.rot);
-                ctx.fillText(e.type, 0, 0);
+            for (var ei=0;ei<enemies.length;ei++){
+                var e=enemies[ei];
+                ctx.save(); ctx.font=e.w+'px serif'; ctx.translate(e.x,e.y); ctx.rotate(Math.sin(frame*0.05)*0.15);
+                if (e.vx<0){ ctx.scale(-1,1); ctx.fillText(e.type,0,0); } else ctx.fillText(e.type,0,0);
                 ctx.restore();
             }
-
-            if (invincible) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20; }
-            drawCharacter('👧🏿', lilo.x, lilo.y, lilo.w, lilo.dir, invincible);
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-
-            if (invincible) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20; }
-            drawCharacter('👽', stitch.x, stitch.y, stitch.w, stitch.dir, invincible);
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-
-            ctx.font = 'bold 11px Segoe UI, sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-            ctx.lineWidth = 3;
-            ctx.textAlign = 'center';
-            ctx.strokeText('Stitch', stitch.x, stitch.y - stitch.w / 2 - 10);
-            ctx.fillText('Stitch', stitch.x, stitch.y - stitch.w / 2 - 10);
-            ctx.fillStyle = '#fff8e1';
-            ctx.strokeText('Lilo', lilo.x, lilo.y - lilo.w / 2 - 10);
-            ctx.fillText('Lilo', lilo.x, lilo.y - lilo.w / 2 - 10);
-
-            for (var pi = 0; pi < particles.length; pi++) {
-                var p = particles[pi];
-                var pa = p.life / p.maxLife;
-                ctx.globalAlpha = pa;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * pa, 0, Math.PI * 2);
-                ctx.fill();
+            var team=[pig].concat(pals);
+            if (invincible){ ctx.shadowColor='#ffeb3b'; ctx.shadowBlur=18; }
+            for (var ti=pals.length-1;ti>=0;ti--) drawPig(pals[ti].emoji,pals[ti].x,pals[ti].y,pals[ti].w,pals[ti].dir,invincible);
+            drawPig(pig.emoji,pig.x,pig.y,pig.w,pig.dir,invincible);
+            ctx.shadowBlur=0; ctx.shadowColor='transparent';
+            ctx.font='bold 11px Segoe UI, sans-serif';
+            ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,0.5)';
+            for (var ni=0;ni<team.length;ni++){
+                ctx.fillStyle='#fff';
+                ctx.strokeText(team[ni].name,team[ni].x,team[ni].y-team[ni].w/2-10);
+                ctx.fillText(team[ni].name,team[ni].x,team[ni].y-team[ni].w/2-10);
             }
-            ctx.globalAlpha = 1;
-
-            if (Math.abs(stitch.vx) > 0.5 || Math.abs(stitch.vy) > 0.5) {
-                ctx.globalAlpha = 0.15;
-                ctx.font = (stitch.w * 0.5) + 'px serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('👽', stitch.x - stitch.vx * 2, stitch.y - stitch.vy * 2);
-                ctx.globalAlpha = 1;
+            for (var qi=0;qi<particles.length;qi++){
+                var q=particles[qi], pa=q.life/q.maxLife;
+                ctx.globalAlpha=pa; ctx.fillStyle=q.color;
+                ctx.beginPath(); ctx.arc(q.x,q.y,q.size*pa,0,Math.PI*2); ctx.fill();
             }
+            ctx.globalAlpha=1;
         }
 
-        function gameOver() {
-            gameRunning = false;
-            canvas.style.pointerEvents = 'none';
-            document.getElementById('finalScore').textContent = collected;
-            document.getElementById('finalLevel').textContent = level;
-            document.getElementById('gameOverScreen').style.display = 'flex';
+        function gameOver(){
+            gameRunning=false; canvas.style.pointerEvents='none';
+            document.getElementById('finalScore').textContent=collected;
+            document.getElementById('finalLevel').textContent=level;
+            document.getElementById('gameOverScreen').style.display='flex';
             startLoseAnimation();
         }
-
-        function winGame() {
-            gameRunning = false;
-            canvas.style.pointerEvents = 'none';
-            document.getElementById('winScreen').style.display = 'flex';
+        function winGame(){
+            gameRunning=false; canvas.style.pointerEvents='none';
+            document.getElementById('winScreen').style.display='flex';
             startWinAnimation();
         }
-
-        function resetGame() {
-            collected = 0;
-            lives = 3;
-            level = 1;
-            totalItems = 5;
-            frame = 0;
-            spawnTimer = 0;
-            invincible = false;
-            particles = [];
-            enemies = [];
-            collectibles = [];
-            coconuts = [];
-            bubbles = [];
-            stitch.x = W / 2;
-            stitch.y = H / 2;
-            stitch.vx = 0;
-            stitch.vy = 0;
-            stitch.dir = 1;
-            lilo.x = W / 2 - 55;
-            lilo.y = H / 2 + 15;
-            lilo.vx = 0;
-            lilo.vy = 0;
-            lilo.dir = -1;
-            document.getElementById('total').textContent = totalItems;
-            for (var n = 0; n < totalItems; n++) spawnCollectible();
-            gameRunning = true;
-            canvas.style.pointerEvents = 'auto';
+        function resetGame(){
+            collected=0; lives=3; level=1; frame=0; spawnTimer=0; invincible=false;
+            particles=[]; enemies=[]; collectibles=[]; gusts=[];
+            pig.x=W/2; pig.y=H/2; pig.vx=0; pig.vy=0; pig.dir=1;
+            for (var i=0;i<pals.length;i++){ pals[i].x=W/2+pals[i].offX; pals[i].y=H/2+pals[i].offY; pals[i].dir=-1; }
+            document.getElementById('total').textContent=totalItems;
+            for (var n=0;n<totalItems;n++) spawnCollectible();
+            gameRunning=true; canvas.style.pointerEvents='auto';
         }
+        function loop(){ if(gameRunning){ update(); draw(); } requestAnimationFrame(loop); }
 
-        function loop() {
-            if (gameRunning) {
-                update();
-                draw();
-            }
-            requestAnimationFrame(loop);
-        }
-
-        document.getElementById('startBtn').addEventListener('click', function() {
-            document.getElementById('startScreen').style.display = 'none';
-            resetGame();
+        document.getElementById('startBtn').addEventListener('click', function(){
+            document.getElementById('startScreen').style.display='none'; resetGame();
         });
-        document.getElementById('restartBtn').addEventListener('click', function() {
-            loseActive = false;
-            document.getElementById('gameOverScreen').style.display = 'none';
-            resetGame();
+        document.getElementById('restartBtn').addEventListener('click', function(){
+            loseActive=false; document.getElementById('gameOverScreen').style.display='none'; resetGame();
         });
-        document.getElementById('restartBtn2').addEventListener('click', function() {
-            winActive = false;
-            document.getElementById('winScreen').style.display = 'none';
-            resetGame();
+        document.getElementById('restartBtn2').addEventListener('click', function(){
+            winActive=false; document.getElementById('winScreen').style.display='none'; resetGame();
         });
 
-        // ===== LOSE SCREEN =====
-        var loseCanvas = document.getElementById('loseCanvas');
-        var lctx = loseCanvas.getContext('2d');
-        var lW, lH, loseFrame = 0, loseActive = false;
-        var sandGrains = [], loseShells = [], loseFootprints = [], loseWaves2 = [], loseStarfish = [];
-
-        function resizeLose() {
-            lW = loseCanvas.width = window.innerWidth;
-            lH = loseCanvas.height = window.innerHeight;
+        // ===== TELA DERROTA: entardecer no campo + lobo =====
+        var loseCanvas=document.getElementById('loseCanvas'), lctx=loseCanvas.getContext('2d');
+        var lW,lH,loseFrame=0,loseActive=false, lPigs=[], lRain=[];
+        function resizeLose(){ lW=loseCanvas.width=window.innerWidth; lH=loseCanvas.height=window.innerHeight; }
+        resizeLose(); window.addEventListener('resize',resizeLose);
+        function initLoseScene(){
+            loseFrame=0; loseActive=true; lPigs=[]; lRain=[];
+            for(var i=0;i<3;i++) lPigs.push({x:lW*0.35+i*60,y:lH*0.62,ph:i*2});
+            for(var j=0;j<60;j++) lRain.push({x:Math.random()*lW,y:Math.random()*lH,s:1+Math.random()*2,v:2+Math.random()*3});
         }
-        resizeLose();
-        window.addEventListener('resize', resizeLose);
-
-        function initLoseScene() {
-            loseFrame = 0;
-            loseActive = true;
-            sandGrains = [];
-            loseShells = [];
-            loseFootprints = [];
-            loseWaves2 = [];
-            loseStarfish = [];
-
-            for (var i = 0; i < 120; i++) {
-                sandGrains.push({
-                    x: Math.random() * lW, y: lH * 0.3 + Math.random() * lH * 0.7,
-                    r: 1 + Math.random() * 2.5, speed: 0.2 + Math.random() * 0.6,
-                    drift: (Math.random() - 0.5) * 0.5, alpha: 0.3 + Math.random() * 0.5,
-                    color: Math.random() < 0.5 ? '#fdd835' : '#f9a825'
-                });
-            }
-
-            var shellEmojis = ['🐚','🦪','🪸'];
-            for (var j = 0; j < 10; j++) {
-                loseShells.push({
-                    x: Math.random() * lW, y: lH * 0.55 + Math.random() * lH * 0.35,
-                    emoji: shellEmojis[Math.floor(Math.random() * shellEmojis.length)],
-                    size: 16 + Math.random() * 16, bobPhase: Math.random() * Math.PI * 2
-                });
-            }
-
-            for (var k = 0; k < 5; k++) {
-                loseFootprints.push({
-                    x: Math.random() * lW * 0.8 + lW * 0.1,
-                    y: lH * 0.5 + Math.random() * lH * 0.3,
-                    alpha: 0.15 + Math.random() * 0.15
-                });
-            }
-
-            for (var m = 0; m < 3; m++) {
-                loseWaves2.push({ phase: Math.random() * Math.PI * 2, y: lH * 0.32 + m * 15, amp: 5 + Math.random() * 4 });
-            }
-
-            for (var n = 0; n < 4; n++) {
-                loseStarfish.push({
-                    x: Math.random() * lW, y: lH * 0.6 + Math.random() * lH * 0.3,
-                    size: 18 + Math.random() * 10, rot: Math.random() * 0.3 - 0.15,
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
-        }
-
-        function updateLose() {
+        function drawLose(){
             loseFrame++;
-            for (var i = 0; i < sandGrains.length; i++) {
-                sandGrains[i].x += sandGrains[i].drift;
-                sandGrains[i].y += sandGrains[i].speed;
-                if (sandGrains[i].y > lH + 5) {
-                    sandGrains[i].y = lH * 0.3;
-                    sandGrains[i].x = Math.random() * lW;
-                }
+            var g=lctx.createLinearGradient(0,0,0,lH);
+            g.addColorStop(0,'#4a148c'); g.addColorStop(0.4,'#e65100'); g.addColorStop(0.6,'#33691e'); g.addColorStop(1,'#1b330f');
+            lctx.fillStyle=g; lctx.fillRect(0,0,lW,lH);
+            lctx.beginPath(); lctx.arc(lW*0.5,lH*0.35,26,0,Math.PI*2); lctx.fillStyle='#fff9c4'; lctx.fill();
+            lctx.fillStyle='#5d4037';
+            lctx.fillRect(lW*0.2,lH*0.45,90,70); lctx.fillRect(lW*0.65,lH*0.45,90,70);
+            lctx.fillStyle='#3e2723';
+            lctx.beginPath(); lctx.moveTo(lW*0.2-10,lH*0.45); lctx.lineTo(lW*0.2+45,lH*0.38); lctx.lineTo(lW*0.2+100,lH*0.45); lctx.fill();
+            lctx.beginPath(); lctx.moveTo(lW*0.65-10,lH*0.45); lctx.lineTo(lW*0.65+45,lH*0.38); lctx.lineTo(lW*0.65+100,lH*0.45); lctx.fill();
+            lctx.textAlign='center'; lctx.textBaseline='middle';
+            lctx.font='60px serif';
+            lctx.fillText('🐺',lW*0.5+Math.sin(loseFrame*0.03)*10,lH*0.5);
+            lctx.font='44px serif';
+            for(var i=0;i<lPigs.length;i++){
+                lctx.fillText('🐷',lPigs[i].x,lPigs[i].y+Math.sin(loseFrame*0.04+lPigs[i].ph)*4);
             }
+            for(var z=0;z<3;z++){
+                lctx.globalAlpha=0.6-z*0.15; lctx.font=(14+z*4)+'px Segoe UI'; lctx.fillStyle='white';
+                lctx.fillText('z',lW*0.5-40+z*14,lH*0.55-z*16+Math.sin(loseFrame*0.04+z)*4);
+            }
+            lctx.globalAlpha=1;
+            lctx.strokeStyle='rgba(255,255,255,0.25)';
+            for(var r=0;r<lRain.length;r++){
+                var rn=lRain[r]; rn.y+=rn.v; if(rn.y>lH) rn.y=0;
+                lctx.beginPath(); lctx.moveTo(rn.x,rn.y); lctx.lineTo(rn.x-3,rn.y+10); lctx.stroke();
+            }
+            if(loseActive) requestAnimationFrame(drawLose);
         }
+        function startLoseAnimation(){ resizeLose(); initLoseScene(); drawLose(); }
 
-        function drawLose() {
-            var skyG = lctx.createLinearGradient(0, 0, 0, lH * 0.35);
-            skyG.addColorStop(0, '#ffab40');
-            skyG.addColorStop(1, '#ff8f00');
-            lctx.fillStyle = skyG;
-            lctx.fillRect(0, 0, lW, lH * 0.38);
-
-            var sunX = lW * 0.5, sunY = lH * 0.28;
-            var sg = lctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 55);
-            sg.addColorStop(0, 'rgba(255,236,179,1)');
-            sg.addColorStop(0.6, 'rgba(255,183,77,0.5)');
-            sg.addColorStop(1, 'rgba(255,152,0,0)');
-            lctx.fillStyle = sg;
-            lctx.fillRect(sunX - 70, sunY - 70, 140, 140);
-            lctx.beginPath();
-            lctx.arc(sunX, sunY, 25, 0, Math.PI * 2);
-            lctx.fillStyle = '#fff9c4';
-            lctx.fill();
-
-            var waterG = lctx.createLinearGradient(0, lH * 0.32, 0, lH * 0.42);
-            waterG.addColorStop(0, '#0288d1');
-            waterG.addColorStop(1, '#01579b');
-            lctx.fillStyle = waterG;
-            lctx.fillRect(0, lH * 0.32, lW, lH * 0.1);
-
-            lctx.strokeStyle = 'rgba(255,255,255,0.3)';
-            lctx.lineWidth = 2;
-            for (var wi = 0; wi < loseWaves2.length; wi++) {
-                var w = loseWaves2[wi];
-                lctx.beginPath();
-                for (var x = 0; x <= lW; x += 4) {
-                    var y = w.y + Math.sin(x * 0.01 + w.phase + loseFrame * 0.025) * w.amp;
-                    if (x === 0) lctx.moveTo(x, y);
-                    else lctx.lineTo(x, y);
-                }
-                lctx.stroke();
-            }
-
-            var sandY = lH * 0.4;
-            var sandG = lctx.createLinearGradient(0, sandY, 0, lH);
-            sandG.addColorStop(0, '#fdd835');
-            sandG.addColorStop(0.3, '#f9a825');
-            sandG.addColorStop(0.7, '#f57f17');
-            sandG.addColorStop(1, '#e65100');
-            lctx.fillStyle = sandG;
-            lctx.fillRect(0, sandY, lW, lH - sandY);
-
-            lctx.strokeStyle = 'rgba(0,0,0,0.05)';
-            lctx.lineWidth = 1;
-            for (var ti = 0; ti < 8; ti++) {
-                var ly = sandY + 20 + ti * (lH - sandY) * 0.1;
-                lctx.beginPath();
-                for (var tx = 0; tx <= lW; tx += 6) {
-                    var ty = ly + Math.sin(tx * 0.015 + ti * 1.5 + loseFrame * 0.008) * 3;
-                    if (tx === 0) lctx.moveTo(tx, ty);
-                    else lctx.lineTo(tx, ty);
-                }
-                lctx.stroke();
-            }
-
-            lctx.fillStyle = 'rgba(180,130,60,0.3)';
-            for (var fi = 0; fi < loseFootprints.length; fi++) {
-                var fp = loseFootprints[fi];
-                lctx.globalAlpha = fp.alpha;
-                lctx.beginPath(); lctx.ellipse(fp.x, fp.y, 6, 10, -0.2, 0, Math.PI * 2); lctx.fill();
-                lctx.beginPath(); lctx.ellipse(fp.x - 8, fp.y - 5, 3, 5, 0.3, 0, Math.PI * 2); lctx.fill();
-                lctx.beginPath(); lctx.ellipse(fp.x + 20, fp.y - 8, 6, 10, 0.2, 0, Math.PI * 2); lctx.fill();
-                lctx.beginPath(); lctx.ellipse(fp.x + 28, fp.y - 13, 3, 5, -0.3, 0, Math.PI * 2); lctx.fill();
-            }
-            lctx.globalAlpha = 1;
-
-            for (var gi = 0; gi < sandGrains.length; gi++) {
-                var g = sandGrains[gi];
-                lctx.globalAlpha = g.alpha;
-                lctx.fillStyle = g.color;
-                lctx.beginPath();
-                lctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
-                lctx.fill();
-            }
-            lctx.globalAlpha = 1;
-
-            lctx.textAlign = 'center';
-            lctx.textBaseline = 'middle';
-            for (var si = 0; si < loseShells.length; si++) {
-                var s = loseShells[si];
-                var sy = s.y + Math.sin(loseFrame * 0.02 + s.bobPhase) * 2;
-                lctx.font = s.size + 'px serif';
-                lctx.fillText(s.emoji, s.x, sy);
-            }
-
-            for (var sti = 0; sti < loseStarfish.length; sti++) {
-                var st = loseStarfish[sti];
-                lctx.save();
-                lctx.translate(st.x, st.y);
-                lctx.rotate(st.rot + Math.sin(loseFrame * 0.01 + st.phase) * 0.05);
-                lctx.font = st.size + 'px serif';
-                lctx.fillText('⭐', 0, 0);
-                lctx.restore();
-            }
-
-            var cx = lW * 0.5, cy = lH * 0.6;
-            lctx.font = '50px serif';
-            lctx.textAlign = 'center';
-            lctx.textBaseline = 'middle';
-            lctx.save();
-            lctx.translate(cx - 25, cy);
-            lctx.rotate(0.3);
-            lctx.fillText('👧🏿', 0, 0);
-            lctx.restore();
-            lctx.save();
-            lctx.translate(cx + 30, cy + 5);
-            lctx.rotate(-0.25);
-            lctx.fillText('👽', 0, 0);
-            lctx.restore();
-
-            for (var zi = 0; zi < 3; zi++) {
-                var zx = cx + 40 + zi * 15;
-                var zy = cy - 30 - zi * 18 + Math.sin(loseFrame * 0.04 + zi) * 5;
-                lctx.globalAlpha = 0.6 - zi * 0.15;
-                lctx.font = (14 + zi * 4) + 'px Segoe UI, sans-serif';
-                lctx.fillStyle = 'white';
-                lctx.fillText('z', zx, zy);
-            }
-            lctx.globalAlpha = 1;
-
-            lctx.strokeStyle = 'rgba(255,236,179,0.2)';
-            lctx.lineWidth = 1;
-            for (var windi = 0; windi < 6; windi++) {
-                var wx = ((loseFrame * 2 + windi * 200) % (lW + 200)) - 100;
-                var wy = lH * 0.45 + windi * lH * 0.06;
-                lctx.beginPath();
-                lctx.moveTo(wx, wy);
-                lctx.lineTo(wx + 30 + Math.sin(loseFrame * 0.03 + windi) * 10, wy - 2);
-                lctx.stroke();
-            }
-
-            var vig = lctx.createRadialGradient(lW / 2, lH / 2, lW * 0.2, lW / 2, lH / 2, lW * 0.8);
-            vig.addColorStop(0, 'rgba(0,0,0,0)');
-            vig.addColorStop(1, 'rgba(0,0,0,0.4)');
-            lctx.fillStyle = vig;
-            lctx.fillRect(0, 0, lW, lH);
+        // ===== TELA VITÓRIA: casa de tijolos + festa =====
+        var winCanvas=document.getElementById('winCanvas'), wctx=winCanvas.getContext('2d');
+        var wW,wH,winFrame=0,winActive=false,winNotes=[],winHearts=[];
+        function resizeWin(){ wW=winCanvas.width=window.innerWidth; wH=winCanvas.height=window.innerHeight; }
+        resizeWin(); window.addEventListener('resize',resizeWin);
+        function initWinScene(){
+            winFrame=0; winActive=true; winNotes=[]; winHearts=[];
+            for(var i=0;i<16;i++) winNotes.push({x:Math.random()*wW,y:Math.random()*wH*0.5,v:0.5+Math.random(),t:['🎵','🎶','⭐','🎉'][i%4]});
+            for(var j=0;j<10;j++) winHearts.push({x:Math.random()*wW,y:wH*0.4+Math.random()*wH*0.5,ph:Math.random()*6.28});
         }
-
-        function loseLoop() {
-            if (!loseActive) return;
-            updateLose();
-            drawLose();
-            requestAnimationFrame(loseLoop);
-        }
-
-        function startLoseAnimation() {
-            resizeLose();
-            initLoseScene();
-            loseLoop();
-        }
-
-        // ===== WIN SCREEN =====
-        var winCanvas = document.getElementById('winCanvas');
-        var wctx = winCanvas.getContext('2d');
-        var wW, wH, winFrame = 0, winActive = false;
-        var winFish = [], winBubbles = [], winWaves = [], winCorals = [], winStars = [];
-
-        function resizeWin() {
-            wW = winCanvas.width = window.innerWidth;
-            wH = winCanvas.height = window.innerHeight;
-        }
-        resizeWin();
-        window.addEventListener('resize', resizeWin);
-
-        function initWinScene() {
-            winFrame = 0;
-            winActive = true;
-            winFish = [];
-            winBubbles = [];
-            winWaves = [];
-            winCorals = [];
-            winStars = [];
-
-            var fishEmojis = ['🐟','🐠','🐡','🦈','🐬','🐙'];
-            for (var i = 0; i < 6; i++) {
-                winFish.push({
-                    x: Math.random() * wW, y: wH * 0.3 + Math.random() * wH * 0.35,
-                    speed: 0.8 + Math.random() * 1.5, dir: Math.random() < 0.5 ? 1 : -1,
-                    emoji: fishEmojis[i], size: 22 + Math.random() * 14,
-                    bobPhase: Math.random() * Math.PI * 2
-                });
-            }
-
-            for (var j = 0; j < 25; j++) {
-                winBubbles.push({
-                    x: Math.random() * wW, y: wH * 0.5 + Math.random() * wH * 0.5,
-                    r: 2 + Math.random() * 5, speed: 0.3 + Math.random() * 0.8,
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
-
-            for (var k = 0; k < 4; k++) {
-                winWaves.push({
-                    phase: Math.random() * Math.PI * 2,
-                    speed: 0.015 + Math.random() * 0.01,
-                    amp: 8 + Math.random() * 6,
-                    y: wH * 0.38 + k * 12
-                });
-            }
-
-            for (var m = 0; m < 8; m++) {
-                winCorals.push({
-                    x: Math.random() * wW, y: wH * 0.82 + Math.random() * wH * 0.12,
-                    emoji: '🪸', size: 20 + Math.random() * 18
-                });
-            }
-
-            for (var n = 0; n < 12; n++) {
-                winStars.push({
-                    x: Math.random() * wW, y: wH * 0.75 + Math.random() * wH * 0.15,
-                    phase: Math.random() * Math.PI * 2
-                });
-            }
-        }
-
-        function updateWin() {
+        function drawWin(){
             winFrame++;
-            for (var i = 0; i < winFish.length; i++) {
-                winFish[i].x += winFish[i].speed * winFish[i].dir;
-                if (winFish[i].x > wW + 50) { winFish[i].x = -40; winFish[i].y = wH * 0.3 + Math.random() * wH * 0.35; }
-                if (winFish[i].x < -50) { winFish[i].x = wW + 40; winFish[i].y = wH * 0.3 + Math.random() * wH * 0.35; }
+            var g=wctx.createLinearGradient(0,0,0,wH);
+            g.addColorStop(0,'#29b6f6'); g.addColorStop(0.5,'#aed581'); g.addColorStop(1,'#558b2f');
+            wctx.fillStyle=g; wctx.fillRect(0,0,wW,wH);
+            wctx.beginPath(); wctx.arc(wW*0.15,wH*0.15,32,0,Math.PI*2); wctx.fillStyle='#fff176'; wctx.fill();
+            // casa de tijolos grande
+            var hx=wW*0.5,hy=wH*0.55,s=130;
+            wctx.fillStyle='#d32f2f'; wctx.fillRect(hx-s/2,hy-s/2,s,s);
+            wctx.strokeStyle='#fff'; wctx.lineWidth=2;
+            for(var by=hy-s/2+15;by<hy+s/2;by+=18){ wctx.beginPath(); wctx.moveTo(hx-s/2,by); wctx.lineTo(hx+s/2,by); wctx.stroke(); }
+            wctx.fillStyle='#6a1b9a';
+            wctx.beginPath(); wctx.moveTo(hx-s/2-15,hy-s/2); wctx.lineTo(hx,hy-s/2-60); wctx.lineTo(hx+s/2+15,hy-s/2); wctx.fill();
+            wctx.fillStyle='#4e342e'; wctx.fillRect(hx-16,hy+s/2-44,32,44);
+            wctx.textAlign='center'; wctx.textBaseline='middle'; wctx.font='52px serif';
+            wctx.fillText('🐷',hx-45+Math.sin(winFrame*0.05)*4,hy+s/2+32);
+            wctx.fillText('🐽',hx+Math.cos(winFrame*0.05)*4,hy+s/2+28);
+            wctx.fillText('🐷',hx+45+Math.sin(winFrame*0.05+2)*4,hy+s/2+32);
+            wctx.font='22px serif';
+            for(var i=0;i<winNotes.length;i++){
+                var n=winNotes[i]; n.y-=n.v; if(n.y<0) n.y=wH*0.4;
+                wctx.fillText(n.t,n.x+Math.sin(winFrame*0.03+i)*8,n.y);
             }
-            for (var j = 0; j < winBubbles.length; j++) {
-                winBubbles[j].y -= winBubbles[j].speed;
-                winBubbles[j].x += Math.sin(winFrame * 0.03 + winBubbles[j].phase) * 0.4;
-                if (winBubbles[j].y < wH * 0.2) {
-                    winBubbles[j].y = wH * 0.5 + Math.random() * wH * 0.5;
-                    winBubbles[j].x = Math.random() * wW;
-                }
+            for(var j=0;j<winHearts.length;j++){
+                wctx.fillText('❤️',winHearts[j].x,winHearts[j].y+Math.sin(winFrame*0.04+winHearts[j].ph)*6);
             }
+            if(winActive) requestAnimationFrame(drawWin);
         }
+        function startWinAnimation(){ resizeWin(); initWinScene(); drawWin(); }
 
-        function drawWin() {
-            var g = wctx.createLinearGradient(0, 0, 0, wH);
-            g.addColorStop(0, '#0277bd');
-            g.addColorStop(0.25, '#01579b');
-            g.addColorStop(0.5, '#0d47a1');
-            g.addColorStop(0.75, '#0a2351');
-            g.addColorStop(1, '#061233');
-            wctx.fillStyle = g;
-            wctx.fillRect(0, 0, wW, wH);
-
-            wctx.save();
-            wctx.globalAlpha = 0.06;
-            for (var ri = 0; ri < 5; ri++) {
-                var rx = wW * 0.15 + ri * wW * 0.18;
-                var grd = wctx.createLinearGradient(rx, 0, rx + 40, wH * 0.7);
-                grd.addColorStop(0, '#4fc3f7');
-                grd.addColorStop(1, 'transparent');
-                wctx.fillStyle = grd;
-                wctx.beginPath();
-                wctx.moveTo(rx, 0);
-                wctx.lineTo(rx + 80, 0);
-                wctx.lineTo(rx + 120 + Math.sin(winFrame * 0.01 + ri) * 20, wH * 0.7);
-                wctx.lineTo(rx + 60 + Math.sin(winFrame * 0.01 + ri) * 20, wH * 0.7);
-                wctx.fill();
-            }
-            wctx.restore();
-
-            for (var wi = 0; wi < winWaves.length; wi++) {
-                var w = winWaves[wi];
-                wctx.strokeStyle = 'rgba(129,212,250,0.3)';
-                wctx.lineWidth = 2;
-                wctx.beginPath();
-                for (var x = 0; x <= wW; x += 4) {
-                    var y = w.y + Math.sin(x * 0.008 + w.phase + winFrame * w.speed) * w.amp;
-                    if (x === 0) wctx.moveTo(x, y);
-                    else wctx.lineTo(x, y);
-                }
-                wctx.stroke();
-            }
-
-            for (var bi = 0; bi < winBubbles.length; bi++) {
-                var b = winBubbles[bi];
-                wctx.globalAlpha = 0.25 + Math.sin(winFrame * 0.05 + b.phase) * 0.15;
-                wctx.strokeStyle = 'rgba(179,229,252,0.7)';
-                wctx.lineWidth = 1;
-                wctx.beginPath();
-                wctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-                wctx.stroke();
-                wctx.fillStyle = 'rgba(255,255,255,0.3)';
-                wctx.beginPath();
-                wctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.25, 0, Math.PI * 2);
-                wctx.fill();
-            }
-            wctx.globalAlpha = 1;
-
-            wctx.textAlign = 'center';
-            wctx.textBaseline = 'middle';
-            for (var fi = 0; fi < winFish.length; fi++) {
-                var f = winFish[fi];
-                var by = f.y + Math.sin(winFrame * 0.04 + f.bobPhase) * 6;
-                wctx.save();
-                wctx.font = f.size + 'px serif';
-                if (f.dir < 0) {
-                    wctx.translate(f.x, by);
-                    wctx.scale(-1, 1);
-                    wctx.fillText(f.emoji, 0, 0);
-                } else {
-                    wctx.fillText(f.emoji, f.x, by);
-                }
-                wctx.restore();
-            }
-
-            for (var ci = 0; ci < winCorals.length; ci++) {
-                wctx.font = winCorals[ci].size + 'px serif';
-                wctx.fillText(winCorals[ci].emoji, winCorals[ci].x, winCorals[ci].y);
-            }
-            for (var si = 0; si < winStars.length; si++) {
-                var sy = winStars[si].y + Math.sin(winFrame * 0.02 + winStars[si].phase) * 3;
-                wctx.save();
-                wctx.shadowColor = '#ffd54f';
-                wctx.shadowBlur = 8;
-                wctx.font = '20px serif';
-                wctx.fillText('⭐', winStars[si].x, sy);
-                wctx.restore();
-            }
-
-            var surfX = wW * 0.5 + Math.sin(winFrame * 0.015) * 60;
-            var surfY = wH * 0.38 + Math.sin(winFrame * 0.025) * 8;
-            wctx.save();
-            wctx.translate(surfX, surfY);
-            wctx.rotate(Math.sin(winFrame * 0.02) * 0.08);
-            wctx.fillStyle = '#ff6f00';
-            wctx.beginPath();
-            wctx.ellipse(0, 12, 45, 8, 0, 0, Math.PI * 2);
-            wctx.fill();
-            wctx.fillStyle = '#ffab00';
-            wctx.beginPath();
-            wctx.ellipse(0, 12, 30, 5, 0, 0, Math.PI * 2);
-            wctx.fill();
-            wctx.font = '36px serif';
-            wctx.textAlign = 'center';
-            wctx.textBaseline = 'middle';
-            wctx.fillText('👧🏿', -18, -5);
-            wctx.fillText('👽', 18, -5);
-            wctx.restore();
-
-            for (var spi = 0; spi < 8; spi++) {
-                var spx = (spi * wW * 0.13 + winFrame * 0.5) % wW;
-                var spy = wH * 0.1 + Math.sin(winFrame * 0.03 + spi * 2) * wH * 0.35;
-                var brightness = Math.sin(winFrame * 0.08 + spi) * 0.4 + 0.5;
-                wctx.fillStyle = 'rgba(255,255,255,' + brightness + ')';
-                wctx.beginPath();
-                wctx.arc(spx, spy, 1.5, 0, Math.PI * 2);
-                wctx.fill();
-            }
-        }
-
-        function winLoop() {
-            if (!winActive) return;
-            updateWin();
-            drawWin();
-            requestAnimationFrame(winLoop);
-        }
-
-        function startWinAnimation() {
-            resizeWin();
-            initWinScene();
-            winLoop();
-        }
-
-        stitch.x = W / 2;
-        stitch.y = H / 2;
-        lilo.x = W / 2 - 55;
-        lilo.y = H / 2 + 15;
+        pig.x=W/2; pig.y=H/2;
         loop();
     })();
     </script>
