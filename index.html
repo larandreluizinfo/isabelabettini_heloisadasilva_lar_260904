@@ -77,7 +77,8 @@
         <div class="chars">🐷🐷🐷🐺</div>
         <h1>Os 3 Porquinhos</h1>
         <h2>Fuja do Lobo Mau!</h2>
-        <p>Ajude <b>Cícero, Heitor e Prático</b> a recolher <b>palha 🌾, madeira 🪵 e tijolos 🧱</b> para construir as casinhas.<br>
+        <p>Ajude <b>Cícero, Heitor e Prático</b> a construir as 3 casinhas, na ordem da história:<br>
+        🌾 <b>Palha</b> (casinhas 1–2) → 🪵 <b>Madeira</b> (casinhas 3–5) → 🧱 <b>Tijolos</b> (casinhas 6–8)!<br>
         Desvie do <b>Lobo Mau 🐺</b> e do sopro <b>🌪️</b>! Use setas / WASD ou o mouse.<br>
         🎵 Tem musiquinha alegre — <b>vamos conseguir!</b> 💪🐷</p>
         <button id="startBtn">Começar</button>
@@ -86,9 +87,9 @@
     <canvas id="gameCanvas"></canvas>
 
     <div id="hud">
-        <div class="hud-item">🧱 Materiais: <span id="score">0</span> / <span id="total">6</span></div>
+        <div class="hud-item"><span id="matIcon">🌾</span> <span id="matName">Palha</span>: <span id="score">0</span> / <span id="total">6</span></div>
         <div class="hud-item">❤️ Vidas: <span id="lives">3</span></div>
-        <div class="hud-item">🏠 Casinha: <span id="level">1</span> / 8</div>
+        <div class="hud-item">🏠 Casinha <span id="level">1</span>/8: <span id="houseType">🌾 Palha</span></div>
         <button id="musicBtn" title="Ligar/desligar música">🎵 Música: ON</button>
     </div>
 
@@ -115,6 +116,19 @@
     <script>
     (function() {
         var WIN_LEVEL = 8;
+        // Cada fase constrói um tipo de casa: palha -> madeira -> tijolo
+        function houseOf(lv) {
+            if (lv <= 2) return { name: 'Palha', icon: '🌾', mat: '🌾' };
+            if (lv <= 5) return { name: 'Madeira', icon: '🪵', mat: '🪵' };
+            return { name: 'Tijolos', icon: '🧱', mat: '🧱' };
+        }
+        var BONUS = ['🍎','🌻','⭐','🏠'];
+        function updateMatHUD() {
+            var h = houseOf(level);
+            document.getElementById('matIcon').textContent = h.icon;
+            document.getElementById('matName').textContent = h.name;
+            document.getElementById('houseType').textContent = h.icon + ' ' + h.name;
+        }
         var canvas = document.getElementById('gameCanvas');
         var ctx = canvas.getContext('2d');
         var W, H;
@@ -220,10 +234,12 @@
             if (musicOn) { ensureAudio(); showCheer('🎵 Música ligada! Vamos conseguir! 🐷'); }
         });
 
-        var MATS = ['🌾','🪵','🧱','🌾','🪵','🧱','🍎','🌻','⭐','🏠'];
         function spawnCollectible() {
+            var h = houseOf(level);
+            // 70% material da casa atual, 30% bônus
+            var type = Math.random() < 0.7 ? h.mat : BONUS[Math.floor(Math.random() * BONUS.length)];
             var c = { x: Math.random()*(W-80)+40, y: Math.random()*(H*0.5)+H*0.2, w: 30, h: 30,
-                type: MATS[Math.floor(Math.random()*MATS.length)],
+                type: type,
                 bobPhase: Math.random()*6.28, bobSpeed: 0.03+Math.random()*0.03, bobAmp: 4+Math.random()*4, glow: Math.random()*6.28 };
             c.baseY = c.y;
             collectibles.push(c);
@@ -410,7 +426,9 @@
                         if (level>=WIN_LEVEL){ winGame(); return; }
                         level++;
                         sfxLevel();
-                        showCheer('🏠 Casinha ' + level + '! Vamos conseguir! 🐷🐷🐷');
+                        updateMatHUD();
+                        var hh = houseOf(level);
+                        showCheer('🏠 Casa de ' + hh.name + ' ' + hh.icon + '! Vamos conseguir! 🐷🐷🐷');
                         collected=0;
                         document.getElementById('total').textContent=totalItems;
                         for (var n=0;n<totalItems;n++) spawnCollectible();
@@ -492,7 +510,8 @@
             for (var n=0;n<totalItems;n++) spawnCollectible();
             gameRunning=true; canvas.style.pointerEvents='auto';
             startMusic();
-            showCheer('💪 Vamos conseguir! 🐷🐷🐷');
+            updateMatHUD();
+            showCheer('🌾 Casa de Palha! Vamos conseguir! 🐷🐷🐷');
         }
         function loop(){ if(gameRunning){ update(); draw(); } requestAnimationFrame(loop); }
 
